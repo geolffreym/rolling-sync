@@ -1,73 +1,98 @@
 package io
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"os"
 )
 
 type IO struct {
-	FileDir       string
-	BufferSize    int
-	FileSize      int64
-	FileChunks    int
-	SignatureFile string
-	file          *os.File
+	file      *os.File
+	BlockSize int
 }
 
-func (r *IO) Read() (*IO, error) {
+// Process file stats
+func (r *IO) Read(input string) ([][]byte, error) {
 	// Open file to split
-	file, err := os.Open(r.FileDir)
+	file, err := os.Open(input)
 	if err != nil {
-		return r, err
+		return nil, err
 	}
-
-	// Close after routine finish
-	defer file.Close()
 
 	// Get file info and get total file size
 	fileInfo, _ := file.Stat()
 	fileSize := fileInfo.Size()
 	// Calculate file chunks availables
-	fileChunks := int(math.Ceil(float64(fileSize) / float64(r.BufferSize)))
+	fileChunks := r.Chunks(fileSize)
 	fmt.Printf("Total Pieces %d \n", fileChunks)
 
 	if fileChunks <= 1 {
-		return r, errors.New("At least 2 chunks are required")
+		return nil, errors.New("At least 2 chunks are required")
 	}
 
 	r.file = file
-	r.FileChunks = fileChunks
-	r.FileSize = fileSize
-	return r, nil
-}
+	blocks, err := r.Blocks()
 
-// Receive as input a file and return hashed chunks
-func (r *IO) WriteSignature() error {
-
-	if r.FileChunks == 0 {
-		return errors.New("No files chunk to process")
+	if err != nil {
+		return nil, err
 	}
 
-	f, err := os.Create(r.SignatureFile)
+	return blocks, nil
+}
+
+// Return chunks length based on file size
+func (r *IO) Chunks(fileSize int64) int {
+	return int(math.Ceil(float64(fileSize) / float64(r.BlockSize)))
+}
+
+// Generate checksum blocks from file chunks
+// INFO: this probably could cause memory issues for big files
+// INFO: keep this approach for test only
+// INFO: in real use case could be improved using *bufio.Reader
+func (r *IO) Blocks() ([][]byte, error) {
+
+	if r.file == nil {
+		return nil, errors.New("No file set please Read one a first")
+	}
+
+	blocks := [][]byte{}
+	file := bufio.NewReader(r.file)
+	defer r.file.Close()
+
+	for {
+		//Read chunks from file
+		chunkBuffer := make([]byte, r.BlockSize)
+		bytesRead, err := file.Read(chunkBuffer)
+		// Stop if not bytes read or end to file
+		if bytesRead == 0 || err == io.EOF {
+			break
+		}
+
+		// Persist checksum for blocks
+		blocks = append(blocks, chunkBuffer)
+	}
+
+	return blocks, nil
+}
+
+// Write sha256 signature
+func (r *IO) WriteSignature(file string) error {
+	hasher := sha256.New()
+
+	if _, err := io.Copy(hasher, r.file); err != nil {
+		return err
+	}
+
+	signature, err := os.Create(file)
 	if err != nil {
 		return err
 	}
 
-	// Iterate over chunks and hash(chunk)
-	for cursor := 0; cursor < r.FileChunks; cursor++ {
-		// Read chunks from file
-		// Keep cursor moving from chunks in file and get smaller chunk if not % 2
-		chunkSize := math.Ceil(math.Min(float64(r.BufferSize), float64(r.FileSize-int64(r.BufferSize*cursor))))
-		chunkBuffer := make([]byte, int(chunkSize))
-		r.file.Read(chunkBuffer)
-
-		hash := sha256.Sum256(chunkBuffer)
-		f.Write(hash[:])
-
-	}
-
+	signature.Write(hasher.Sum(nil))
 	return nil
+
 }
