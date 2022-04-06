@@ -2,7 +2,6 @@ package io
 
 import (
 	"bufio"
-	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -11,12 +10,15 @@ import (
 )
 
 type IO struct {
-	file      *os.File
-	BlockSize int
+	blockSize int
+}
+
+func New(blockSize int) *IO {
+	return &IO{blockSize: blockSize}
 }
 
 // Process file stats
-func (r *IO) Read(input string) ([][]byte, error) {
+func (o *IO) Read(input string) (*os.File, error) {
 	// Open file to split
 	file, err := os.Open(input)
 	if err != nil {
@@ -27,46 +29,42 @@ func (r *IO) Read(input string) ([][]byte, error) {
 	fileInfo, _ := file.Stat()
 	fileSize := fileInfo.Size()
 	// Calculate file chunks availables
-	fileChunks := r.Chunks(fileSize)
+	fileChunks := o.Chunks(fileSize)
 	fmt.Printf("Total Pieces %d \n", fileChunks)
 
 	if fileChunks <= 1 {
 		return nil, errors.New("At least 2 chunks are required")
 	}
 
-	r.file = file
-	blocks, err := r.Blocks()
+	return file, nil
 
-	if err != nil {
-		return nil, err
-	}
-
-	return blocks, nil
 }
 
 // Return chunks length based on file size
-func (r *IO) Chunks(fileSize int64) int {
-	return int(math.Ceil(float64(fileSize) / float64(r.BlockSize)))
+func (o *IO) Chunks(fileSize int64) int {
+	return int(math.Ceil(float64(fileSize) / float64(o.blockSize)))
 }
 
 // Generate checksum blocks from file chunks
 // INFO: this probably could cause memory issues for big files
 // INFO: keep this approach for test only
 // INFO: in real use case could be improved using *bufio.Reader
-func (r *IO) Blocks() ([][]byte, error) {
+// INFO: could be improved using concurrency file
+func (o *IO) Blocks(file string) ([][]byte, error) {
 
-	if r.file == nil {
-		return nil, errors.New("No file set please Read one a first")
+	f, err := o.Read(file)
+	if err != nil {
+		return nil, err
 	}
 
 	blocks := [][]byte{}
-	file := bufio.NewReader(r.file)
-	defer r.file.Close()
+	reader := bufio.NewReader(f)
+	defer f.Close()
 
 	for {
 		//Read chunks from file
-		chunkBuffer := make([]byte, r.BlockSize)
-		bytesRead, err := file.Read(chunkBuffer)
+		chunkBuffer := make([]byte, o.blockSize)
+		bytesRead, err := reader.Read(chunkBuffer)
 		// Stop if not bytes read or end to file
 		if bytesRead == 0 || err == io.EOF {
 			break
@@ -79,20 +77,14 @@ func (r *IO) Blocks() ([][]byte, error) {
 	return blocks, nil
 }
 
-// Write sha256 signature
-func (r *IO) WriteSignature(file string) error {
-	hasher := sha256.New()
+// Writer factory using bufio performed write operations
+func (o *IO) Writer(file string) (*bufio.Writer, error) {
+	f, err := os.Create(file)
 
-	if _, err := io.Copy(hasher, r.file); err != nil {
-		return err
-	}
-
-	signature, err := os.Create(file)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	signature.Write(hasher.Sum(nil))
-	return nil
-
+	w := bufio.NewWriter(f)
+	return w, nil
 }
