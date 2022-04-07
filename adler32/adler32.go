@@ -1,4 +1,4 @@
-package rolling
+package adler32
 
 import (
 	"hash"
@@ -6,7 +6,7 @@ import (
 )
 
 const M = 65521
-const S = 1 << 5 // 32 bits
+const S = 1 << 6 //  bits
 type Adler32 struct {
 	window     []byte
 	last       int
