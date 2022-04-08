@@ -11,14 +11,18 @@ import (
 
 type IO struct {
 	blockSize int
+	Signature *Signature
 }
 
 func New(blockSize int) *IO {
-	return &IO{blockSize: blockSize}
+	return &IO{
+		blockSize: blockSize,
+		Signature: &Signature{},
+	}
 }
 
 // Process file stats
-func (o *IO) Read(input string) (*os.File, error) {
+func (o *IO) Open(input string) (*bufio.Reader, error) {
 	// Open file to split
 	file, err := os.Open(input)
 	if err != nil {
@@ -36,7 +40,7 @@ func (o *IO) Read(input string) (*os.File, error) {
 		return nil, errors.New("At least 2 chunks are required")
 	}
 
-	return file, nil
+	return bufio.NewReader(file), nil
 
 }
 
@@ -52,14 +56,12 @@ func (o *IO) Chunks(fileSize int64) int {
 // INFO: could be improved using concurrency file
 func (o *IO) Blocks(file string) ([][]byte, error) {
 
-	f, err := o.Read(file)
+	reader, err := o.Open(file)
 	if err != nil {
 		return nil, err
 	}
 
 	blocks := [][]byte{}
-	reader := bufio.NewReader(f)
-	defer f.Close()
 
 	for {
 		//Read chunks from file
@@ -75,16 +77,4 @@ func (o *IO) Blocks(file string) ([][]byte, error) {
 	}
 
 	return blocks, nil
-}
-
-// Writer factory using bufio performed write operations
-func (o *IO) Writer(file string) (*bufio.Writer, error) {
-	f, err := os.Create(file)
-
-	if err != nil {
-		return nil, err
-	}
-
-	w := bufio.NewWriter(f)
-	return w, nil
 }

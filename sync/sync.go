@@ -1,89 +1,151 @@
 package sync
 
 import (
+	"bufio"
 	"crypto/md5"
-	"encoding/gob"
+	"encoding/hex"
 	"errors"
-	"hash/adler32"
-	"os"
+	"fmt"
+	"hash"
+	"io"
+	"rolling/adler32"
 )
 
+const S = 16
+
+type Delta []interface{}
+type Bytes struct {
+	Offset int64
+	Len    int
+}
 type Table struct {
 	Weak   uint32
-	Strong []byte
+	Strong string
 }
 type Sync struct {
 	blockSize  int
 	signatures []Table
+	checksums  map[uint32]map[string]int
+	s          hash.Hash
+	w          *adler32.Adler32
 }
 
 func New(size int) *Sync {
 	return &Sync{
 		blockSize: size,
+		checksums: make(map[uint32]map[string]int),
+		s:         md5.New(),
+		w:         adler32.New(),
 	}
 }
 
 // Fill signature from blocks
-func (s *Sync) Fill(blocks [][]byte) {
-	for _, block := range blocks {
-		// Weak ans strong checksum
+func (s *Sync) FillTable(reader *bufio.Reader) {
+
+	for {
+		//Read chunks from file
+		block := make([]byte, s.blockSize)
+		bytesRead, err := reader.Read(block)
+		// Stop if not bytes read or end to file
+		if bytesRead == 0 || err == io.EOF {
+			break
+		}
+
+		// Weak and strong checksum
 		// https://rsync.samba.org/tech_report/node3.html
-		adler := adler32.New()
-		md5 := md5.New()
-		adler.Write(block)
-		md5.Write(block)
-
-		weak := adler.Sum32()
-		strong := md5.Sum(nil)
-
+		weak := s.weak(block)
+		strong := s.strong(block)
 		// Keep signatures while get written
 		s.signatures = append(
 			s.signatures,
 			Table{Weak: weak, Strong: strong},
 		)
-	}
 
+	}
 }
 
-// Write signature
-func (s *Sync) Write(file string) error {
-
-	if len(s.signatures) == 0 {
-		return errors.New("No signatures to write")
-	}
-
-	//  Performed writing operations
-	f, err := os.Create(file)
-	if err != nil {
-		return err
-	}
-
-	defer f.Close()
-	enc := gob.NewEncoder(f)
-	err = enc.Encode(s.signatures)
-	return nil
+// Calc strong md5 checksum
+func (s *Sync) strong(block []byte) string {
+	s.s.Write(block)
+	defer s.s.Reset()
+	return hex.EncodeToString(s.s.Sum(nil))
 }
 
-// Read signature
-func (s *Sync) Read(file string) ([]Table, error) {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, err
+// Calc weak adler32 checksum
+func (s *Sync) weak(block []byte) uint32 {
+	s.w.Reset()
+	s.w.Write(block)
+	return s.w.Sum()
+}
+
+// Seek indexes in table and return block number
+func (s *Sync) seek(w uint32, block []byte) (int, error) {
+
+	if subfield, found := s.checksums[w]; found {
+		st := s.strong(block)
+		return subfield[st], nil
 	}
 
-	defer f.Close()
-	read := []Table{}
-	dataDecoder := gob.NewDecoder(f)
-	err = dataDecoder.Decode(&read)
+	return 0, errors.New("Not index in hash table")
+}
 
-	if err != nil {
-		return nil, err
+// Populate checksum tables
+func (s *Sync) fill(signatures []Table) {
+	for i, check := range signatures {
+		d := make(map[string]int)
+		s.checksums[check.Weak] = d
+		d[check.Strong] = i
+	}
+}
+
+func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) (delta []byte) {
+	// var n int
+	var notFound error
+	var bytesRead int
+	var err error
+
+	s.fill(signatures)
+	block := make([]byte, s.blockSize)
+	bytesRead, err = reader.Read(block)
+
+	// read:
+	for {
+		s.w.Reset()
+		s.w.Write(block)
+
+		for {
+			w := s.w.Sum()
+			_, notFound = s.seek(w, block)
+
+			if notFound == nil {
+				fmt.Printf("%s\n", block)
+				block = make([]byte, s.blockSize)
+				bytesRead, err = reader.Read(block)
+				break
+			}
+
+			bytesRead--
+			c, e := reader.ReadByte()
+			fmt.Printf("%s", e)
+			if e != nil {
+				break
+			}
+
+			delta = append(delta, s.w.Roll(c))
+
+		}
+
+		// Stop if not bytes read or end to file
+		if bytesRead == 0 || err == io.EOF {
+			break
+		}
 	}
 
-	return read, nil
+	return
+
 }
 
 // Return signatures tables
-func (s *Sync) Signatures(block []byte) []Table {
+func (s *Sync) Signatures() []Table {
 	return s.signatures
 }

@@ -11,7 +11,6 @@ https://xilinx.github.io/Vitis_Libraries/security/2020.2/guide_L1/internals/adle
 package main
 
 import (
-	"fmt"
 	"log"
 	IO "rolling/io"
 	Sync "rolling/sync"
@@ -20,29 +19,27 @@ import (
 func main() {
 	// Read file to split in chunks
 	// chunk size = 64
-	blockSize := 1 << 6
+
+	blockSize := 1 << 5
 	io := IO.New(blockSize)
 	sync := Sync.New(blockSize)
 
 	// Memory performance improvement using bufio.Reader
-	blocks, err := io.Blocks("test.txt")
+	reader, err := io.Open("test.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Performed writing operations
-	writer, err := io.Writer("signature.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	defer writer.Flush()
-
-	// Roll it and compare the result with full re-calculus every time
 	// For each block slice from file
-	for _, block := range blocks {
-		adler, md5 := sync.Signature(block)
-		fmt.Printf("%d %s", adler, string(md5))
-	}
+	sync.FillTable(reader)
+	signatures := sync.Signatures()
+	// checksums := make(map[uint32]map[string]int)
+	// io.Signature.Write("signature.bin", )
+	// fmt.Print(io.Signature.Read("signature.bin"))
+
+	// End step 1]
+
+	newFile, err := io.Open("test2.txt")
+	sync.Delta(signatures, newFile)
 
 }

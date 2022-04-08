@@ -54,19 +54,24 @@ func (h *Adler32) Write(data []byte) int {
 }
 
 func (h *Adler32) Sum() uint32 {
+	// x =  920 =  0x398  (base 16)
+	// y = 4582 = 0x11E6
+	// Output = 0x11E6 << 16 + 0x398 = 0x11E60398
 	return h.y<<16 | h.x
 }
 
-func (h *Adler32) Roll(input byte) {
+func (h *Adler32) Roll(input byte) byte {
 	new := uint32(input)
-	leave := uint32(h.window[h.last])
+	old := h.window[h.last]
+	leave := uint32(old)
 
 	// Move last pos => +1 and keep stored last input in window
 	h.window[h.last] = input
 	h.last++
 
-	// Move window forward
-	h.x = (h.x + M + new - leave) % M // <- remove element from window and append new [0,1,2,3] - 0 + 4  = [1,2,3,4]
+	// https://en.wikipedia.org/wiki/Adler-32
+	h.x = (h.x + M + new - leave) % M //
 	h.y = (h.y + (h.z*leave/M+1)*M + h.x - (h.z * leave) - 1) % M
+	return old
 
 }
