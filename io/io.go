@@ -49,7 +49,7 @@ func (o *IO) Chunks(fileSize int64) int {
 	return int(math.Ceil(float64(fileSize) / float64(o.blockSize)))
 }
 
-// Generate checksum blocks from file chunks
+// Generate blocks from file
 // INFO: this probably could cause memory issues for big files
 // INFO: keep this approach for test only
 // INFO: in real use case could be improved using *bufio.Reader
