@@ -8,10 +8,10 @@ import (
 const M = 65521
 const S = 1 << 6 //  bits
 type Adler32 struct {
-	window     []byte
-	last       int
-	x, y, z, c uint32
-	hash       hash.Hash32
+	window  []byte // Current window
+	last    int    // Last position
+	x, y, z uint32 // adler32 formula
+	hash    hash.Hash32
 }
 
 func New() *Adler32 {
@@ -33,10 +33,7 @@ func (h *Adler32) Reset() {
 	h.hash.Reset()
 }
 
-/** Keep each window chunk stored
-	window[0][0 0 0 0 0 0 0 0 ]
-	window[1][0 1 2 0 0 5 0 3 ]
-**/
+// Keep  window chunk stored while get processed
 func (h *Adler32) Write(data []byte) int {
 	h.window = data
 	h.hash.Reset()
@@ -53,6 +50,7 @@ func (h *Adler32) Write(data []byte) int {
 	return len(data)
 }
 
+// Calculate and return Checksum
 func (h *Adler32) Sum() uint32 {
 	// x =  920 =  0x398  (base 16)
 	// y = 4582 = 0x11E6
@@ -60,6 +58,7 @@ func (h *Adler32) Sum() uint32 {
 	return h.y<<16 | h.x
 }
 
+// Roll position a = [0123456] = (a - 0 + 7) = [1234567]
 func (h *Adler32) Roll(input byte) byte {
 	new := uint32(input)
 	old := h.window[h.last]
