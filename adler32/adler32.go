@@ -82,11 +82,17 @@ func (h *Adler32) Last() int { return h.last }
 // Roll position a = [0123456] = (a - 0 + 7) = [1234567]
 func (h *Adler32) RollIn(input byte) {
 	new := uint32(input)
-	// Move last pos => +1 and keep stored last input in window
-	h.window = append(h.window, input)
 	h.last += 1
-
 	// https://en.wikipedia.org/wiki/Adler-32
-	h.a = (h.a + new)
-	h.b = (h.b + h.a)
+	h.a += new
+	h.b += h.a
+}
+
+// Roll position a = [0123456] = (a - 0 + 7) = [1234567]
+func (h *Adler32) RollOut(input byte) {
+	out := uint32(input)
+	// https://en.wikipedia.org/wiki/Adler-32
+	h.a -= out
+	h.b = uint32(h.last) * out
+	h.last -= 1
 }

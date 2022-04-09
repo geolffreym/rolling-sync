@@ -1,3 +1,8 @@
+/**
+Copyright (c) 2022, Geolffrey Mena <gmjun2000@gmail.com>
+sync implements a circular buffer interface that
+based on https://github.com/balena-os/circbuf
+**/
 package sync
 
 import (
@@ -5,7 +10,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"hash"
 	"io"
 	"rolling/adler32"
@@ -18,6 +22,7 @@ type Bytes struct {
 	Offset int64
 	Len    int
 }
+
 type Table struct {
 	Weak   uint32
 	Strong string
@@ -26,7 +31,7 @@ type Table struct {
 type Sync struct {
 	blockSize  int
 	signatures []Table
-	delta      []Match
+	delta      []byte
 	data       []byte
 	checksums  map[uint32]map[string]int
 	cursor     int
@@ -40,7 +45,7 @@ func New(size int) *Sync {
 		blockSize: size,
 		checksums: make(map[uint32]map[string]int),
 		data:      make([]byte, size),
-		delta:     make([]Match, size),
+		delta:     make([]byte, size),
 		cursor:    0,
 		total:     0,
 		s:         md5.New(),
@@ -62,7 +67,7 @@ func (s *Sync) FillTable(reader *bufio.Reader) {
 
 		// Weak and strong checksum
 		// https://rsync.samba.org/tech_report/node3.html
-		fmt.Printf("%s\n", block)
+		// fmt.Printf("%s\n", block)
 		weak := s.weak(block)
 		strong := s.strong(block)
 		// Keep signatures while get written
@@ -125,17 +130,36 @@ func (s *Sync) writeByte(c byte) {
 	s.total++
 }
 
-func (s *Sync) get(i int) byte {
+func (s *Sync) getRollingIndex(i int) (byte, error) {
 	switch {
+	case i >= s.total || i >= s.blockSize:
+		return 0, errors.New("Out of bounds index")
 	case s.total > s.blockSize:
-		return s.data[(s.cursor+i)%s.blockSize]
+		rotateIndex := (s.cursor + i) % s.blockSize
+		return s.data[rotateIndex], nil
 	default:
-		return s.data[i]
+		return s.data[i], nil
 	}
 }
 
-func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) error {
+// Bytes provides a slice of the bytes written
+func (s *Sync) Bytes() []byte {
+	switch {
+	case s.total >= s.blockSize && s.cursor == 0:
+		return s.data
+	case s.total > s.blockSize:
+		copy(s.delta, s.data[s.cursor:])
+		copy(s.delta[s.blockSize-s.cursor:], s.data[:s.cursor])
+		return s.delta
+	default:
+		return s.data[:s.cursor]
+	}
+}
 
+func (s *Sync) Delta(signatures []Table, reader *bufio.Reader, out *bufio.Writer) error {
+
+	var initial byte
+	match := &Match{output: out}
 	s.fill(signatures)
 	s.w.Reset()
 
@@ -148,12 +172,16 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) error {
 			return err
 		}
 
-		s.w.RollIn(c)
-		s.writeByte(c)
+		if s.total > 0 {
+			// Keep first element from block
+			// Use this initial byte to operate over checksum
+			initial, _ = s.getRollingIndex(0)
+		}
 
-		w := s.w.Sum()
-		fmt.Printf("\n%d", w)
-		fmt.Printf("\n%s", s.data)
+		// Roll checksum
+		s.w.RollIn(c)
+		// Tmp store byte in memory
+		s.writeByte(c)
 
 		// Wait until we have a full bytes length
 		if s.w.Last() < s.blockSize {
@@ -162,18 +190,36 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) error {
 
 		// If written bytes overflow current size
 		if s.w.Last() > s.blockSize {
-			fmt.Printf("%s", s.blockSize)
+			// Subtract initial byte to switch left <<  bytes
+			// eg. [abcdefgh] = size 8 | a << [icdefgh] << i | c << [ijdefgh] << j
+			match.add(MATCH_KIND_LITERAL, uint64(initial), 1)
+			s.w.RollOut(initial)
+
 		}
 
-		_, notFound := s.seek(w, s.data)
+		// Checksum
+		w := s.w.Sum()
+		// Check if weak and strong match in signatures
+		index, notFound := s.seek(w, s.data)
 		if notFound == nil {
-			fmt.Printf("Literal match: %s", s.data)
-			s.w.Reset()
-			s.resetBytes()
+			s.w.Reset()    // clean checksum
+			s.resetBytes() // clean local bytes cache
+			// Stored action
+			match.add(MATCH_KIND_COPY, uint64(index*s.blockSize), uint64(s.blockSize))
 		}
 
 	}
 
+	// Pending bytes
+	for _, b := range s.Bytes() {
+		match.add(0, uint64(b), 1)
+	}
+
+	if err := match.flush(); err != nil {
+		return err
+	}
+
+	out.Flush()
 	return nil
 
 }
