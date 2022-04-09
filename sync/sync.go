@@ -105,28 +105,25 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) (delta []byte) {
 	var err error
 
 	s.fill(signatures)
-	block := make([]byte, s.blockSize)
-	bytesRead, err = reader.Read(block)
 
 	// read:
 	for {
+
+		block := make([]byte, s.blockSize)
+		bytesRead, err = reader.Read(block)
+
 		s.w.Reset()
 		s.w.Write(block)
 
 		for {
 			w := s.w.Sum()
 			_, notFound = s.seek(w, block)
-
 			if notFound == nil {
-				fmt.Printf("%s\n", block)
-				block = make([]byte, s.blockSize)
-				bytesRead, err = reader.Read(block)
 				break
 			}
 
-			bytesRead--
 			c, e := reader.ReadByte()
-			fmt.Printf("%s", e)
+			fmt.Printf("%s")
 			if e != nil {
 				break
 			}
