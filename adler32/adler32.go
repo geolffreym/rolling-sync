@@ -68,7 +68,7 @@ func (h *Adler32) Roll(input byte) byte {
 	h.window[h.last] = input
 	h.last++
 
-	// https://en.wikipedia.org/wiki/Adler-32
+	https://rsync.samba.org/tech_report/node3.html
 	h.x = (h.x + M + new - leave) % M //
 	h.y = (h.y + (h.z*leave/M+1)*M + h.x - (h.z * leave) - 1) % M
 	return old
