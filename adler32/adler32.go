@@ -35,16 +35,15 @@ func (h *Adler32) Reset() {
 
 // Keep  window chunk stored while get processed
 func (h *Adler32) Write(data []byte) int {
-	h.window = data
-	h.hash.Reset()
-	h.hash.Write(h.window)
-
 	// https://en.wikipedia.org/wiki/Adler-32
 	// 0xffff = 65535 = 2^16 = the largest prime number smaller than 2^16
 	// At any position p in the input, the state of the rolling hash will depend only on the last s bytes of the file
-	s := h.hash.Sum32()
-	h.hash.Reset()
+	
+        h.window = data
+        h.hash.Reset()
 	h.hash.Write(h.window)
+        s := h.hash.Sum32()
+
 	h.x, h.y = s&0xffff, s>>16
 	h.z = uint32(len(h.window)) % M
 	return len(data)
