@@ -1,3 +1,6 @@
+// Adler Rolling Checksum
+// Based on rsync algorithm https://rsync.samba.org/tech_report/node3.html
+
 package adler32
 
 import (
@@ -7,10 +10,11 @@ import (
 
 const M = 65521
 const S = 1 << 6 //  bits
+
 type Adler32 struct {
 	window  []byte // Current window
 	last    int    // Last position
-	x, y, z uint32 // adler32 formula
+	a, b, n uint32 // adler32 formula
 	hash    hash.Hash32
 }
 
@@ -19,15 +23,15 @@ func New() *Adler32 {
 		window: make([]byte, 0, S),
 		hash:   adler32.New(),
 		last:   0,
-		x:      1,
-		y:      0,
-		z:      0,
+		a:      1,
+		b:      0,
+		n:      0,
 	}
 }
 func (h *Adler32) Reset() {
-	h.x = 1
-	h.y = 0
-	h.z = 0
+	h.a = 1
+	h.b = 0
+	h.n = 0
 	h.last = 0
 	h.window = h.window[:0]
 	h.hash.Reset()
@@ -45,8 +49,8 @@ func (h *Adler32) Write(data []byte) int {
 	s := h.hash.Sum32()
 	h.hash.Reset()
 	h.hash.Write(h.window)
-	h.x, h.y = s&0xffff, s>>16
-	h.z = uint32(len(h.window)) % M
+	h.a, h.b = s&0xffff, s>>16
+	h.n = uint32(len(h.window)) % M
 	return len(data)
 }
 
@@ -55,7 +59,7 @@ func (h *Adler32) Sum() uint32 {
 	// x =  920 =  0x398  (base 16)
 	// y = 4582 = 0x11E6
 	// Output = 0x11E6 << 16 + 0x398 = 0x11E60398
-	return h.y<<16 | h.x
+	return h.b<<16 | h.a
 }
 
 // Roll position a = [0123456] = (a - 0 + 7) = [1234567]
@@ -69,8 +73,8 @@ func (h *Adler32) Roll(input byte) byte {
 	h.last++
 
 	// https://en.wikipedia.org/wiki/Adler-32
-	h.x = (h.x + M + new - leave) % M //
-	h.y = (h.y + (h.z*leave/M+1)*M + h.x - (h.z * leave) - 1) % M
+	h.a = (h.a + M + new - leave) % M //
+	h.b = (h.b + (1+(h.n*leave/M))*M + h.a - (h.n * leave) - 1) % M
 	return old
 
 }

@@ -1,10 +1,9 @@
-package io
+package fileio
 
 import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"os"
 )
@@ -47,34 +46,4 @@ func (o *IO) Open(input string) (*bufio.Reader, error) {
 // Return chunks length based on file size
 func (o *IO) Chunks(fileSize int64) int {
 	return int(math.Ceil(float64(fileSize) / float64(o.blockSize)))
-}
-
-// Generate blocks from file
-// INFO: this probably could cause memory issues for big files
-// INFO: keep this approach for test only
-// INFO: in real use case could be improved using *bufio.Reader
-// INFO: could be improved using concurrency file
-func (o *IO) Blocks(file string) ([][]byte, error) {
-
-	reader, err := o.Open(file)
-	if err != nil {
-		return nil, err
-	}
-
-	blocks := [][]byte{}
-
-	for {
-		//Read chunks from file
-		chunkBuffer := make([]byte, o.blockSize)
-		bytesRead, err := reader.Read(chunkBuffer)
-		// Stop if not bytes read or end to file
-		if bytesRead == 0 || err == io.EOF {
-			break
-		}
-
-		// Persist checksum for blocks
-		blocks = append(blocks, chunkBuffer)
-	}
-
-	return blocks, nil
 }

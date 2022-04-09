@@ -1,4 +1,4 @@
-package io
+package fileio
 
 // Expected attributes related to readed file
 // Expected output from rolling hash
