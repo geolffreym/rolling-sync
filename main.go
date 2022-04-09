@@ -39,7 +39,7 @@ func main() {
 	// End step 1]
 
 	newFile, err := io.Open("test2.txt")
-	out, err := io.Writer("delta.txt")
-	sync.Delta(signatures, newFile, out)
+	// out, err := io.Writer("delta.txt")
+	sync.Delta(signatures, newFile)
 
 }

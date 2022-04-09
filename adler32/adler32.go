@@ -84,7 +84,7 @@ func (h *Adler32) RollIn(input byte) {
 	new := uint32(input)
 	// Move last pos => +1 and keep stored last input in window
 	h.window = append(h.window, input)
-	h.last = len(h.window)
+	h.last += 1
 
 	// https://en.wikipedia.org/wiki/Adler-32
 	h.a = (h.a + new)
