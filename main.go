@@ -12,13 +12,12 @@ package main
 
 import (
 	"log"
-	IO "rolling/io"
+	IO "rolling/fileio"
 	Sync "rolling/sync"
 )
 
 func main() {
 	// Read file to split in chunks
-	// chunk size = 64
 
 	blockSize := 1 << 5
 	io := IO.New(blockSize)
@@ -40,6 +39,7 @@ func main() {
 	// End step 1]
 
 	newFile, err := io.Open("test2.txt")
-	sync.Delta(signatures, newFile)
+	out, err := io.Writer("delta.txt")
+	sync.Delta(signatures, newFile, out)
 
 }

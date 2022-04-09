@@ -25,7 +25,10 @@ type Table struct {
 type Sync struct {
 	blockSize  int
 	signatures []Table
+	data       []byte
 	checksums  map[uint32]map[string]int
+	cursor     int
+	total      int
 	s          hash.Hash
 	w          *adler32.Adler32
 }
@@ -34,6 +37,9 @@ func New(size int) *Sync {
 	return &Sync{
 		blockSize: size,
 		checksums: make(map[uint32]map[string]int),
+		data:      make([]byte, size),
+		cursor:    0,
+		total:     0,
 		s:         md5.New(),
 		w:         adler32.New(),
 	}
@@ -53,6 +59,7 @@ func (s *Sync) FillTable(reader *bufio.Reader) {
 
 		// Weak and strong checksum
 		// https://rsync.samba.org/tech_report/node3.html
+		fmt.Printf("%s\n", block)
 		weak := s.weak(block)
 		strong := s.strong(block)
 		// Keep signatures while get written
@@ -98,47 +105,47 @@ func (s *Sync) fill(signatures []Table) {
 	}
 }
 
-func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) (delta []byte) {
+// WriteByte writes a single byte into the buffer.
+func (s *Sync) writeByte(c byte) {
+	s.data[s.cursor] = c
+	s.cursor = ((s.cursor + 1) % s.blockSize)
+	s.total++
+}
+
+func (s *Sync) Delta(signatures []Table, reader *bufio.Reader, out *bufio.Writer) error {
 	// var n int
 	var notFound error
-	var bytesRead int
-	var err error
-
 	s.fill(signatures)
+	s.w.Reset()
 
 	// read:
 	for {
-
-		block := make([]byte, s.blockSize)
-		bytesRead, err = reader.Read(block)
-
-		s.w.Reset()
-		s.w.Write(block)
-
-		for {
-			w := s.w.Sum()
-			_, notFound = s.seek(w, block)
-			if notFound == nil {
-				break
-			}
-
-			c, e := reader.ReadByte()
-			fmt.Printf("%s")
-			if e != nil {
-				break
-			}
-
-			delta = append(delta, s.w.Roll(c))
-
-		}
-
-		// Stop if not bytes read or end to file
-		if bytesRead == 0 || err == io.EOF {
+		c, err := reader.ReadByte()
+		if err == io.EOF {
 			break
+		} else if err != nil {
+			return err
 		}
+
+		s.w.RollIn(c)
+		s.writeByte(c)
+
+		w := s.w.Sum()
+		fmt.Printf("%d\n", w)
+		fmt.Printf("%s\n", s.data)
+
+		if s.w.Last() < s.blockSize {
+			continue
+		}
+
+		_, notFound = s.seek(w, s.data)
+		if notFound == nil {
+			continue
+		}
+
 	}
 
-	return
+	return nil
 
 }
 
