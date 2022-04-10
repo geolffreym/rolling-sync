@@ -131,7 +131,8 @@ func (s *Sync) writeByte(c byte) {
 	s.total++
 }
 
-func (s *Sync) getRollingIndex(i int) (byte, error) {
+// Return bytes by index
+func (s *Sync) getByIndex(i int) (byte, error) {
 	switch {
 	case i >= s.total || i >= s.blockSize:
 		return 0, errors.New("Out of bounds index")
@@ -176,54 +177,57 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader, out *bufio.Writer
 		if s.total > 0 {
 			// Keep first element from block
 			// Use this initial byte to operate over checksum
-			initial, _ = s.getRollingIndex(0)
+			initial, _ = s.getByIndex(0)
 		}
 
 		// Roll checksum
 		s.w.RollIn(c)
 		// Tmp store byte in memory
 		s.writeByte(c)
-
+		fmt.Printf("%s\n", s.data)
 		// Wait until we have a full bytes length
 		if s.total < s.blockSize {
 			continue
 		}
 
-		// TODO Check if changes are made
-		// If written bytes overflow current size
+		// // TODO Check if changes are made
+		// // If written bytes overflow current size
 		if s.total > s.blockSize {
 			// Subtract initial byte to switch left <<  bytes
 			// eg. [abcdefgh] = size 8 | a << [icdefgh] << i | c << [ijdefgh] << j
-			match.add(MATCH_KIND_LITERAL, uint64(initial), 1)
+			// match.add(MATCH_KIND_LITERAL, uint64(initial), 1)
+			// if w >
 			s.w.RollOut(initial)
 
 		}
 
 		// Checksum
 		w := s.w.Sum()
-		fmt.Printf("%d\n", w)
-		fmt.Printf("%s\n", s.data)
+		// fmt.Printf("%d\n", w)
+		// fmt.Printf("%s\n", s.data)
 		// Check if weak and strong match in signatures
-		index, notFound := s.seek(w, s.data)
+		_, notFound := s.seek(w, s.data)
 		if notFound == nil {
+			fmt.Printf("\nMatched=%s\n", s.data)
 			s.w.Reset()    // clean checksum
 			s.resetBytes() // clean local bytes cache
 			// Stored action
-			match.add(MATCH_KIND_COPY, uint64(index*s.blockSize), uint64(s.blockSize))
+			// match.add(MATCH_KIND_COPY, uint64(index*s.blockSize), uint64(s.blockSize))
 		}
 
 	}
 
-	// // Pending bytes
-	// for _, b := range s.Bytes() {
-	// 	match.add(0, uint64(b), 1)
-	// }
+	// Pending bytes
+	for _, b := range s.Bytes() {
+		fmt.Printf("%s", string(b))
+		match.add(0, uint64(b), 1)
+	}
 
-	// if err := match.flush(); err != nil {
-	// 	return err
-	// }
+	if err := match.flush(); err != nil {
+		return err
+	}
 
-	// out.Flush()
+	out.Flush()
 	return nil
 
 }
