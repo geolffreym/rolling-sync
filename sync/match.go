@@ -20,37 +20,18 @@ type Match struct {
 	lit    []byte
 }
 
-func intSize(d uint64) uint8 {
-	switch {
-	case d == uint64(uint8(d)):
-		return 1
-	case d == uint64(uint16(d)):
-		return 2
-	case d == uint64(uint32(d)):
-		return 4
-	default:
-		return 8
-	}
-}
-
 func (m *Match) flush() error {
 	if m.len == 0 {
 		return nil
 	}
 
-	posSize := intSize(m.pos)
-	lenSize := intSize(m.len)
-
 	switch m.kind {
 	case MATCH_KIND_COPY:
-		m.output.WriteString("COPY_START=")
-		m.output.WriteString(fmt.Sprintf("%d:%d", m.pos, posSize))
-		m.output.WriteString(fmt.Sprintf("%d:%d", m.len, lenSize))
-		m.output.WriteString("\n")
+		m.output.WriteString("COPY: ")
+		m.output.WriteString(fmt.Sprintf("<%d:%d>\n", m.pos, m.len))
 	case MATCH_KIND_LITERAL:
-
-		m.output.WriteString("LITERAL_START=")
-		m.output.WriteString(fmt.Sprintf("%d:%d", m.len, lenSize))
+		m.output.WriteString("LITERAL: ")
+		m.output.WriteString(fmt.Sprintf("<%d:%d>", m.pos, m.len))
 		m.output.Write(m.lit)
 		m.output.WriteString("\n")
 		m.lit = []byte{}

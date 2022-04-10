@@ -10,6 +10,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"hash"
 	"io"
 	"rolling/adler32"
@@ -184,12 +185,13 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader, out *bufio.Writer
 		s.writeByte(c)
 
 		// Wait until we have a full bytes length
-		if s.w.Last() < s.blockSize {
+		if s.total < s.blockSize {
 			continue
 		}
 
+		// TODO Check if changes are made
 		// If written bytes overflow current size
-		if s.w.Last() > s.blockSize {
+		if s.total > s.blockSize {
 			// Subtract initial byte to switch left <<  bytes
 			// eg. [abcdefgh] = size 8 | a << [icdefgh] << i | c << [ijdefgh] << j
 			match.add(MATCH_KIND_LITERAL, uint64(initial), 1)
@@ -199,6 +201,8 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader, out *bufio.Writer
 
 		// Checksum
 		w := s.w.Sum()
+		fmt.Printf("%d\n", w)
+		fmt.Printf("%s\n", s.data)
 		// Check if weak and strong match in signatures
 		index, notFound := s.seek(w, s.data)
 		if notFound == nil {
@@ -210,16 +214,16 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader, out *bufio.Writer
 
 	}
 
-	// Pending bytes
-	for _, b := range s.Bytes() {
-		match.add(0, uint64(b), 1)
-	}
+	// // Pending bytes
+	// for _, b := range s.Bytes() {
+	// 	match.add(0, uint64(b), 1)
+	// }
 
-	if err := match.flush(); err != nil {
-		return err
-	}
+	// if err := match.flush(); err != nil {
+	// 	return err
+	// }
 
-	out.Flush()
+	// out.Flush()
 	return nil
 
 }

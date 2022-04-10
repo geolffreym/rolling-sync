@@ -1,2 +1,0 @@
-COPY_START=0:164:1
-LITERAL_START=40:1split and rolling hash 123 you know baby
