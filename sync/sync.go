@@ -1,6 +1,6 @@
 /**
 Copyright (c) 2022, Geolffrey Mena <gmjun2000@gmail.com>
-sync implements a circular buffer interface that
+sync implements a circular buffer interface
 based on https://github.com/balena-os/circbuf
 **/
 package sync
