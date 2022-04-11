@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"rolling/adler32"
+	"rolling/rollsum"
 )
 
 const S = 16
@@ -38,7 +38,7 @@ type Sync struct {
 	cursor     int
 	total      int
 	s          hash.Hash
-	w          *adler32.Adler32
+	w          *rollsum.Rollsum
 }
 
 func New(size int) *Sync {
@@ -50,7 +50,7 @@ func New(size int) *Sync {
 		cursor:    0,
 		total:     0,
 		s:         md5.New(),
-		w:         adler32.New(),
+		w:         rollsum.New(),
 	}
 }
 
@@ -89,9 +89,7 @@ func (s *Sync) strong(block []byte) string {
 
 // Calc weak adler32 checksum
 func (s *Sync) weak(block []byte) uint32 {
-	s.w.Reset()
-	s.w.Write(block)
-	return s.w.Sum()
+	return rollsum.WeakChecksum(block)
 }
 
 // Seek indexes in table and return block number
@@ -195,33 +193,33 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader, out *bufio.Writer
 		if s.total > s.blockSize {
 			// Subtract initial byte to switch left <<  bytes
 			// eg. [abcdefgh] = size 8 | a << [icdefgh] << i | c << [ijdefgh] << j
-			// match.add(MATCH_KIND_LITERAL, uint64(initial), 1)
+			match.add(MATCH_KIND_LITERAL, uint64(initial), 1)
 			// if w >
 			s.w.RollOut(initial)
 
 		}
 
 		// Checksum
-		w := s.w.Sum()
+		w := s.w.Digest()
 		// fmt.Printf("%d\n", w)
 		// fmt.Printf("%s\n", s.data)
 		// Check if weak and strong match in signatures
-		_, notFound := s.seek(w, s.data)
+		index, notFound := s.seek(w, s.data)
 		if notFound == nil {
 			fmt.Printf("\nMatched=%s\n", s.data)
 			s.w.Reset()    // clean checksum
 			s.resetBytes() // clean local bytes cache
 			// Stored action
-			// match.add(MATCH_KIND_COPY, uint64(index*s.blockSize), uint64(s.blockSize))
+			match.add(MATCH_KIND_COPY, uint64(index*s.blockSize), uint64(s.blockSize))
 		}
 
 	}
 
-	// Pending bytes
-	for _, b := range s.Bytes() {
-		fmt.Printf("%s", string(b))
-		match.add(0, uint64(b), 1)
-	}
+	// // Pending bytes
+	// for _, b := range s.Bytes() {
+	// 	fmt.Printf("%s", string(b))
+	// 	match.add(0, uint64(b), 1)
+	// }
 
 	if err := match.flush(); err != nil {
 		return err
