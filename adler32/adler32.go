@@ -19,13 +19,11 @@ func New(size int) *Adler32 {
 		count:  0,
 		a:      1,
 		b:      0,
-		n:      0,
 	}
 }
 func (h *Adler32) Reset() {
 	h.a = 0
 	h.b = 0
-	h.n = 0
 	h.count = 0
 	h.Window = h.Window[:0]
 }
