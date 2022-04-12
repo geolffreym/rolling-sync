@@ -187,23 +187,6 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) []byte {
 
 }
 
-// // Bytes provides a slice of the bytes written. This
-// // slice should not be written to. The underlying array
-// // may point to data that will be overwritten by a subsequent
-// // call to Bytes. It does no allocation.
-// func (s *Sync) Bytes() []byte {
-// 	switch {
-// 	case s.written >= s.blockSize && s.cursor == 0:
-// 		return s.cyclic
-// 	case s.written > s.blockSize:
-// 		copy(b.out, b.data[b.writeCursor:])
-// 		copy(b.out[b.size-b.writeCursor:], b.data[:b.writeCursor])
-// 		return b.out
-// 	default:
-// 		return b.data[:b.writeCursor]
-// 	}
-// }
-
 // Return signatures tables
 func (s *Sync) Signatures() []Table {
 	return s.signatures
