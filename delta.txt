@@ -1,7 +1,0 @@
-LITERAL: <0:26>Lorem is simply dummy text
-COPY: <0:32>
-LITERAL: <0:28> industry. he 1500s, when an
-COPY: <0:32>
-COPY: <192:288>
-LITERAL: <0:19>ently publishing so
-COPY: <0:32>
