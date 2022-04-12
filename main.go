@@ -34,6 +34,7 @@ func main() {
 	sync.FillTable(reader)
 	signatures := sync.Signatures()
 	newFile, err := io.Open("mockV2.txt")
+	// TODO write delta if needed
 	sync.Delta(signatures, newFile)
 
 }
