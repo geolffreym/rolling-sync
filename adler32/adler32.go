@@ -39,6 +39,7 @@ func (h *Adler32) Write(data []byte) {
 	for index, char := range data {
 		h.a += uint16(char)
 		h.b += uint16(len(data)-index) * uint16(char)
+		h.count++
 	}
 
 }
