@@ -11,6 +11,7 @@ https://xilinx.github.io/Vitis_Libraries/security/2020.2/guide_L1/internals/adle
 package main
 
 import (
+	"fmt"
 	"log"
 	IO "rolling/fileio"
 	Sync "rolling/sync"
@@ -31,9 +32,9 @@ func main() {
 	// For each block slice from file
 	sync.FillTable(reader)
 	signatures := sync.Signatures()
-	// checksums := make(map[uint32]map[string]int)
-	// io.Signature.Write("signature.bin", )
-	// fmt.Print(io.Signature.Read("signature.bin"))
+
+	io.Signature.Write("signature.bin", signatures)
+	fmt.Print(io.Signature.Read("signature.bin"))
 
 	// End step 1
 

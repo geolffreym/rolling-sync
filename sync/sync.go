@@ -66,7 +66,6 @@ func (s *Sync) FillTable(reader *bufio.Reader) {
 
 		// Weak and strong checksum
 		// https://rsync.samba.org/tech_report/node3.html
-		fmt.Printf("%s\n", block)
 		weak := s.weak(block)
 		strong := s.strong(block)
 		// Keep signatures while get written
