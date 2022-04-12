@@ -9,7 +9,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"hash"
 	"io"
 
@@ -68,7 +67,6 @@ func (s *Sync) FillTable(reader *bufio.Reader) {
 
 		// Weak and strong checksum
 		// https://rsync.samba.org/tech_report/node3.
-		fmt.Printf("%s\n", block)
 		weak := s.weak(block)
 		strong := s.strong(block)
 		// Keep signatures while get written
