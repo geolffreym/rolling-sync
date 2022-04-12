@@ -48,6 +48,8 @@ func CalculateDelta(a []byte, b []byte) map[int]Bytes {
 	// For each block slice from file
 	sync.FillTable(bufioA)
 	signatures := sync.Signatures()
+	// TODO here signatures could be written and read from file
+	// TODO using same signatures directly
 	return sync.Delta(signatures, bufioB)
 }
 
