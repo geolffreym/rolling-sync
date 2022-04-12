@@ -54,13 +54,13 @@ func TestRollIn(t *testing.T) {
 func TestRollOut(t *testing.T) {
 	rolling := &Adler32{}
 
-	rolling.Write([]byte("ow are you doing"))
+	rolling.Write([]byte("w are you doing"))
 	w0 := rolling.Sum()
 
 	rolling.Reset()
 
-	rolling.RollIn('h')
-	rolling.RollIn('o')
+	rolling.RollIn('h') // remove this
+	rolling.RollIn('o') // remove this
 	rolling.RollIn('w')
 	rolling.RollIn(' ')
 	rolling.RollIn('a')
@@ -76,6 +76,7 @@ func TestRollOut(t *testing.T) {
 	rolling.RollIn('i')
 	rolling.RollIn('n')
 	rolling.RollIn('g')
+	rolling.RollOut()
 	rolling.RollOut()
 	w1 := rolling.Sum()
 

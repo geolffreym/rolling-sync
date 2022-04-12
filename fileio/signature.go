@@ -4,7 +4,8 @@ import (
 	"encoding/gob"
 	"errors"
 	"os"
-	"rolling/sync"
+
+	"github.com/geolffreym/rolling-sync/sync"
 )
 
 type Signature struct{}
@@ -24,7 +25,7 @@ func (s *Signature) Write(file string, signatures []sync.Table) error {
 
 	defer f.Close()
 	enc := gob.NewEncoder(f)
-	err = enc.Encode(signatures)
+	enc.Encode(signatures)
 	return nil
 }
 

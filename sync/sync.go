@@ -9,10 +9,10 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"hash"
 	"io"
-	"rolling/adler32"
+
+	"github.com/geolffreym/rolling-sync/adler32"
 )
 
 const S = 16
@@ -32,7 +32,7 @@ type Sync struct {
 	signatures []Table
 	s          hash.Hash
 	w          adler32.Adler32
-	match      []byte
+	match      map[int][]byte
 	checksums  map[uint32]map[string]int
 }
 
@@ -42,7 +42,7 @@ func New(size int) *Sync {
 		written:   0,
 		total:     0,
 		blockSize: size,
-		match:     []byte{},
+		match:     make(map[int][]byte),
 		checksums: make(map[uint32]map[string]int),
 		cyclic:    make([]byte, size),
 		delta:     make([]byte, size),
@@ -137,9 +137,11 @@ func (s *Sync) writeByte(c byte) {
 }
 
 // Bytes provides a slice of the bytes written
-func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) []byte {
+func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int][]byte {
 	s.fill(signatures)
 	s.w.Reset()
+	// Keep tracking changes
+	block := 0
 
 	// TAIL:
 	for {
@@ -160,14 +162,14 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) []byte {
 			continue
 		}
 
-		// If written bytes overflow current size and not match found
 		// Start moving window over data
+		// If written bytes overflow current size and not match found
 		if s.w.Count() > s.blockSize {
 			// Subtract initial byte to switch left <<  bytes
 			// eg. data=abcdef, window=4 => [abcd]: a << [bcd] << e
 			removed, _ := s.w.RollOut()
 			// Store literal matches
-			s.match = append(s.match, removed)
+			s.match[block] = append(s.match[block], removed)
 
 		}
 
@@ -177,11 +179,12 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) []byte {
 		_, notFound := s.seek(w, s.cyclic)
 		if notFound == nil {
 			s.Reset()
+			// Match found upgrade block
+			block++
 		}
 
 	}
 
-	fmt.Printf("%s", s.match)
 	return s.match
 
 }

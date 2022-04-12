@@ -3,7 +3,6 @@ package fileio
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"math"
 	"os"
 )
@@ -33,7 +32,6 @@ func (o *IO) Open(input string) (*bufio.Reader, error) {
 	fileSize := fileInfo.Size()
 	// Calculate file chunks availables
 	fileChunks := o.Chunks(fileSize)
-	fmt.Printf("Total Pieces %d \n", fileChunks)
 
 	if fileChunks <= 1 {
 		return nil, errors.New("At least 2 chunks are required")

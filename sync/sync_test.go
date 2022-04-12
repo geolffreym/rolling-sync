@@ -1,8 +1,8 @@
 package sync
 
 import (
+	"github.com/geolffreym/rolling-sync/fileio"
 	"log"
-	"rolling/fileio"
 	"testing"
 )
 
@@ -34,7 +34,7 @@ Signatures:
 
 **/
 
-func (s *Sync) CalculateDelta(blockSize int, a string, b string) (map[int][]byte, error) {
+func CalculateDelta(blockSize int, a string, b string) (map[int][]byte, error) {
 
 	io := fileio.New(blockSize)
 	sync := New(blockSize)

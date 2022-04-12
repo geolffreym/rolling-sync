@@ -11,10 +11,10 @@ https://xilinx.github.io/Vitis_Libraries/security/2020.2/guide_L1/internals/adle
 package main
 
 import (
-	"fmt"
 	"log"
-	IO "rolling/fileio"
-	Sync "rolling/sync"
+
+	IO "github.com/geolffreym/rolling-sync/fileio"
+	Sync "github.com/geolffreym/rolling-sync/sync"
 )
 
 func main() {
@@ -24,22 +24,16 @@ func main() {
 	sync := Sync.New(blockSize)
 
 	// Memory performance improvement using bufio.Reader
-	reader, err := io.Open("test.txt")
+	reader, err := io.Open("mock.txt")
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
 	// For each block slice from file
 	sync.FillTable(reader)
 	signatures := sync.Signatures()
-
-	io.Signature.Write("signature.bin", signatures)
-	fmt.Print(io.Signature.Read("signature.bin"))
-
-	// End step 1
-
-	newFile, err := io.Open("test2.txt")
-	// out, err := io.Writer("delta.txt")
+	newFile, err := io.Open("mockV2.txt")
 	sync.Delta(signatures, newFile)
 
 }
