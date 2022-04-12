@@ -74,7 +74,7 @@ func TestDetectChunkChange(t *testing.T) {
 	b := []byte("i here guys how are you doing this is a mall test chunk split and rolling hash")
 	expect := map[int][]byte{
 		1: []byte("i here guys h"),               // Match first block change
-		4: []byte(" this is a mall test chunk "), // Match 2 block change
+		4: []byte(" this is a mall test chunk "), // Match blocks 4 changed
 
 	}
 
@@ -87,7 +87,7 @@ func TestDetectChunkAdd(t *testing.T) {
 	a := []byte("i am here guys how are you doing this is a small test for chunk split and rolling hash")
 	b := []byte("i am here guys how are you doingadded this is a small test for chunk split and rolling hash")
 	expect := map[int][]byte{
-		2: []byte("added"), // Match 2 block change
+		2: []byte("added"), // Match blocks 2 changed
 
 	}
 	delta := CalculateDelta(a, b)
