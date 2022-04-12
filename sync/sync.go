@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"rolling/rolling"
+	"rolling/adler32"
 )
 
 const S = 16
@@ -31,7 +31,7 @@ type Sync struct {
 	cyclic     []byte
 	signatures []Table
 	s          hash.Hash
-	w          rolling.Rolling
+	w          adler32.Adler32
 	match      []byte
 	checksums  map[uint32]map[string]int
 }
@@ -47,7 +47,7 @@ func New(size int) *Sync {
 		cyclic:    make([]byte, size),
 		delta:     make([]byte, size),
 		s:         md5.New(),
-		w:         *rolling.New(size),
+		w:         *adler32.New(size),
 	}
 }
 
