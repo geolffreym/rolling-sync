@@ -31,6 +31,7 @@ func (o *IO) Open(input string) (*bufio.Reader, error) {
 	// Get file info and get total file size
 	fileInfo, _ := file.Stat()
 	fileSize := fileInfo.Size()
+	fmt.Printf("%d", fileSize)
 	// Calculate file chunks availables
 	fileChunks := o.Chunks(fileSize)
 	fmt.Printf("Total Pieces %d \n", fileChunks)
@@ -40,18 +41,6 @@ func (o *IO) Open(input string) (*bufio.Reader, error) {
 	}
 
 	return bufio.NewReader(file), nil
-
-}
-
-// Process file stats
-func (o *IO) Writer(input string) (*bufio.Writer, error) {
-	// Open file to split
-	file, err := os.Create(input)
-	if err != nil {
-		return nil, err
-	}
-
-	return bufio.NewWriter(file), nil
 
 }
 
