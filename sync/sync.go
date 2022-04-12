@@ -32,7 +32,7 @@ type Sync struct {
 	signatures []Table
 	s          hash.Hash
 	w          rolling.Rolling
-	match      map[int][]byte
+	match      []byte
 	checksums  map[uint32]map[string]int
 }
 
@@ -42,8 +42,8 @@ func New(size int) *Sync {
 		written:   0,
 		total:     0,
 		blockSize: size,
+		match:     []byte{},
 		checksums: make(map[uint32]map[string]int),
-		match:     make(map[int][]byte),
 		cyclic:    make([]byte, size),
 		delta:     make([]byte, size),
 		s:         md5.New(),
@@ -137,28 +137,8 @@ func (s *Sync) writeByte(c byte) {
 	s.total++
 }
 
-func (s *Sync) Tail() {
-
-	inherit := (len(s.w.Window) - s.cursor) - 1
-	tail := make([]byte, s.blockSize)
-	copy(tail, s.w.Window[inherit:])
-
-	s.w.Reset()
-	s.w.Write(tail)
-	w := s.w.Sum()
-
-	_, notFound := s.seek(w, s.w.Window)
-	if notFound == nil {
-		return
-	}
-
-	// Last block changed
-	s.match[len(s.signatures)-1] = tail
-
-}
-
 // Bytes provides a slice of the bytes written
-func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int][]byte {
+func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) []byte {
 	s.fill(signatures)
 	s.w.Reset()
 
@@ -186,10 +166,9 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int][]byte {
 		if s.w.Count() > s.blockSize {
 			// Subtract initial byte to switch left <<  bytes
 			// eg. data=abcdef, window=4 => [abcd]: a << [bcd] << e
-			block := s.total / s.blockSize
 			removed, _ := s.w.RollOut()
 			// Store literal matches
-			s.match[block] = append(s.match[block], removed)
+			s.match = append(s.match, removed)
 
 		}
 
@@ -203,7 +182,7 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int][]byte {
 
 	}
 
-	s.Tail()
+	fmt.Printf("%s", s.match)
 	return s.match
 
 }

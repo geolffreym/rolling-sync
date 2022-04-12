@@ -57,6 +57,7 @@ func (h *Rolling) Count() int { return h.count }
 func (h *Rolling) RollIn(input byte) {
 	h.a += uint16(input)
 	h.b += h.a
+	// Keep stored windows bytes while get processed
 	h.Window = append(h.Window, input)
 	h.count++
 }
