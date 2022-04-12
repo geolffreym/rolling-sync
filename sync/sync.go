@@ -129,7 +129,6 @@ func (s *Sync) IntegrityCheck() {
 
 // Process matches for bytes processed
 func (s *Sync) flushMatch(block int) {
-	// s.match.offset = (s.match.start + s.blockSize)
 	// Store matches
 	s.match.Start = (block * s.blockSize)
 	s.match.Offset = (s.match.Start + s.blockSize)
@@ -142,9 +141,8 @@ func (s *Sync) flushMatch(block int) {
 func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]Bytes {
 	s.fill(signatures)
 	s.w.Reset()
-	// Keep tracking changes
 
-	// TAIL:
+	// Keep tracking changes
 	for {
 		// Get byte from reader
 		// eg. reader = [abcd], byte = a...
