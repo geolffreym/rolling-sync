@@ -1,3 +1,4 @@
+[![Go](https://github.com/geolffreym/rolling-sync/actions/workflows/go.yml/badge.svg)](https://github.com/geolffreym/rolling-sync/actions/workflows/go.yml)
 # Rolling Hash Algorithm
 _Spec v5 (2022-04-04)_
 
