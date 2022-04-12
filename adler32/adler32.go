@@ -42,6 +42,9 @@ func (h *Adler32) Write(data []byte) {
 		h.count++
 	}
 
+	h.a %= M
+	h.b %= M
+
 }
 
 // Calculate and return Checksum

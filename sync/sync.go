@@ -6,9 +6,10 @@ package sync
 
 import (
 	"bufio"
-	"crypto/md5"
+	"crypto/sha1"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"hash"
 	"io"
 
@@ -17,6 +18,13 @@ import (
 
 const S = 16
 
+type Bytes struct {
+	Offset int
+	Start  int
+	Miss   bool
+	Lit    []byte
+}
+
 type Table struct {
 	Weak   uint32
 	Strong string
@@ -24,29 +32,23 @@ type Table struct {
 
 type Sync struct {
 	blockSize  int
-	cursor     int
-	written    int
-	total      int
 	delta      []byte
-	cyclic     []byte
 	signatures []Table
 	s          hash.Hash
 	w          adler32.Adler32
-	match      map[int][]byte
+	match      Bytes
+	matches    map[int]Bytes
 	checksums  map[uint32]map[string]int
 }
 
 func New(size int) *Sync {
 	return &Sync{
-		cursor:    0,
-		written:   0,
-		total:     0,
 		blockSize: size,
-		match:     make(map[int][]byte),
+		match:     Bytes{},
+		matches:   make(map[int]Bytes),
 		checksums: make(map[uint32]map[string]int),
-		cyclic:    make([]byte, size),
 		delta:     make([]byte, size),
-		s:         md5.New(),
+		s:         sha1.New(),
 		w:         *adler32.New(size),
 	}
 }
@@ -65,7 +67,8 @@ func (s *Sync) FillTable(reader *bufio.Reader) {
 		}
 
 		// Weak and strong checksum
-		// https://rsync.samba.org/tech_report/node3.html
+		// https://rsync.samba.org/tech_report/node3.
+		fmt.Printf("%s\n", block)
 		weak := s.weak(block)
 		strong := s.strong(block)
 		// Keep signatures while get written
@@ -95,7 +98,9 @@ func (s *Sync) weak(block []byte) uint32 {
 func (s *Sync) seek(w uint32, block []byte) (int, error) {
 	if subfield, found := s.checksums[w]; found {
 		st := s.strong(block)
-		return subfield[st], nil
+		if _, ok := subfield[st]; ok {
+			return subfield[st], nil
+		}
 	}
 
 	return 0, errors.New("Not index in hash table")
@@ -112,36 +117,34 @@ func (s *Sync) fill(signatures []Table) {
 	}
 }
 
-// Clear state
-func (s *Sync) Reset() {
-	s.w.Reset()    // clean checksum
-	s.resetBytes() // clean local bytes cache
+func (s *Sync) IntegrityCheck() {
+	for i := range s.signatures {
+		if _, ok := s.matches[i]; !ok {
+			s.matches[i] = Bytes{
+				Miss:   true,                            // Block not found
+				Start:  i * s.blockSize,                 // Start range of block to copy
+				Offset: (i * s.blockSize) + s.blockSize, // End block to copy
+			}
+		}
+	}
 }
 
-func (s *Sync) resetBytes() {
-	s.cursor = 0
-	s.written = 0
-}
+// Process matches for bytes processed
+func (s *Sync) flushMatch(block int) {
+	// s.match.offset = (s.match.start + s.blockSize)
+	// Store matches
+	s.match.Start = (block * s.blockSize)
+	s.match.Offset = (s.match.Start + s.blockSize)
+	s.matches[block] = s.match
+	s.match = Bytes{}
 
-// WriteByte writes a single byte into the buffer.
-func (s *Sync) writeByte(c byte) {
-	s.cyclic[s.cursor] = c
-	// base 0 restart count on overflow case eg.
-	// 30 + 1 % 32 = 31
-	// 31 + 1 % 32 = 0
-	// 32 + 1 % 32 = 1
-	// 33 + 1 % 32 = 2
-	s.cursor = (s.cursor + 1) % s.blockSize
-	s.written++
-	s.total++
 }
 
 // Bytes provides a slice of the bytes written
-func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int][]byte {
+func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]Bytes {
 	s.fill(signatures)
 	s.w.Reset()
 	// Keep tracking changes
-	block := 0
 
 	// TAIL:
 	for {
@@ -154,10 +157,6 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int][]byte {
 
 		// Add new el to checksum
 		s.w.RollIn(c)
-		// Tmp store byte in memory
-		s.writeByte(c)
-
-		// Wait until we have a full bytes length
 		if s.w.Count() < s.blockSize {
 			continue
 		}
@@ -169,23 +168,26 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int][]byte {
 			// eg. data=abcdef, window=4 => [abcd]: a << [bcd] << e
 			removed, _ := s.w.RollOut()
 			// Store literal matches
-			s.match[block] = append(s.match[block], removed)
-
+			s.match.Lit = append(s.match.Lit, removed)
 		}
 
 		// Checksum
 		w := s.w.Sum()
 		// Check if weak and strong match in signatures
-		_, notFound := s.seek(w, s.cyclic)
+		// Match found upgrade block
+		index, notFound := s.seek(w, s.w.Window)
 		if notFound == nil {
-			s.Reset()
-			// Match found upgrade block
-			block++
+			// Process matches
+			s.flushMatch(index)
+			// store block processed
+			s.w.Reset()
+
 		}
 
 	}
 
-	return s.match
+	s.IntegrityCheck()
+	return s.matches
 
 }
 

@@ -59,8 +59,8 @@ func TestRollOut(t *testing.T) {
 
 	rolling.Reset()
 
-	rolling.RollIn('h') // remove this
-	rolling.RollIn('o') // remove this
+	rolling.RollIn('h')
+	rolling.RollIn('o')
 	rolling.RollIn('w')
 	rolling.RollIn(' ')
 	rolling.RollIn('a')
@@ -76,8 +76,8 @@ func TestRollOut(t *testing.T) {
 	rolling.RollIn('i')
 	rolling.RollIn('n')
 	rolling.RollIn('g')
-	rolling.RollOut()
-	rolling.RollOut()
+	rolling.RollOut() // remove h
+	rolling.RollOut() // remove o
 	w1 := rolling.Sum()
 
 	if w0 != w1 {

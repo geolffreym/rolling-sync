@@ -1,7 +1,6 @@
 package fileio
 
 import (
-	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -11,19 +10,10 @@ import (
 
 func TestSignatureReadWrite(t *testing.T) {
 	// Read file to split in chunks
-	blockSize := 1 << 4 // 16 bytes
 	io := IO{blockSize: 1 << 4}
-	sync := sync.New(blockSize)
 
-	// Memory performance improvement using bufio.Reader
-	reader, err := io.Open("../mock.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// For each block slice from file
-	sync.FillTable(reader)
-	signatures := sync.Signatures()
+	signature := sync.Table{Weak: 0000, Strong: "abc123"}
+	signatures := []sync.Table{signature}
 	io.Signature.Write("signature.bin", signatures)
 	out, _ := io.Signature.Read("signature.bin")
 

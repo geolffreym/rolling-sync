@@ -1,8 +1,8 @@
 package sync
 
 import (
-	"github.com/geolffreym/rolling-sync/fileio"
-	"log"
+	"bufio"
+	"bytes"
 	"testing"
 )
 
@@ -34,50 +34,86 @@ Signatures:
 
 **/
 
-func CalculateDelta(blockSize int, a string, b string) (map[int][]byte, error) {
+func CalculateDelta(a []byte, b []byte) map[int]Bytes {
 
-	io := fileio.New(blockSize)
-	sync := New(blockSize)
+	sync := New(1 << 4) // 16 bytes
 
 	// Memory performance improvement using bufio.Reader
-	reader, err := io.Open(a)
-	if err != nil {
-		log.Fatal(err)
-		return nil, err
-	}
+	bytesA := bytes.NewReader(a)
+	bytesB := bytes.NewReader(b)
+
+	bufioA := bufio.NewReader(bytesA)
+	bufioB := bufio.NewReader(bytesB)
 
 	// For each block slice from file
-	sync.FillTable(reader)
+	sync.FillTable(bufioA)
 	signatures := sync.Signatures()
-	newFile, err := io.Open(b)
-	return sync.Delta(signatures, newFile), nil
+	return sync.Delta(signatures, bufioB)
+}
+
+func CheckMatch(delta map[int]Bytes, expected map[int][]byte, t *testing.T) {
+
+	for i := range expected {
+		// Index not matched in delta
+		if _, ok := delta[i]; !ok {
+			t.Errorf("Expected match corresponding index for delta %d", i)
+		}
+
+		literal := delta[i].Lit
+		expect := expected[i]
+		if string(literal) != string(expect) {
+			t.Errorf("Expected match difference %s = %s ", literal, expect)
+		}
+	}
 }
 
 func TestDetectChunkChange(t *testing.T) {
+	a := []byte("i am here guys how are you doing this is a small test for chunk split and rolling hash")
+	b := []byte("i here guys how are you doing this is a mall test chunk split and rolling hash")
+	expect := map[int][]byte{
+		1: []byte("i here guys h"),               // Match first block change
+		4: []byte(" this is a mall test chunk "), // Match 2 block change
 
-	// // Read file to split in chunks
-	// blockSize := 1 << 4 // 16 bytes
-	// io := IO.New(blockSize)
-	// sync := Sync{blockSize: blockSize}
+	}
 
-	// // Memory performance improvement using bufio.Reader
-	// reader, err := io.Open("../mock.txt")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	delta := CalculateDelta(a, b)
+	CheckMatch(delta, expect, t)
 
-	// // For each block slice from file
-	// sync.FillTable(reader)
-	// signatures := sync.Signatures()
-	// newFile, err := io.Open("../mockV2.txt")
-	// sync.Delta(signatures, newFile)
+}
+
+func TestDetectChunkAdd(t *testing.T) {
+	a := []byte("i am here guys how are you doing this is a small test for chunk split and rolling hash")
+	b := []byte("i am here guys how are you doingadded this is a small test for chunk split and rolling hash")
+	expect := map[int][]byte{
+		2: []byte("added"), // Match 2 block change
+
+	}
+	delta := CalculateDelta(a, b)
+	CheckMatch(delta, expect, t)
 
 }
 
 func TestDetectChunkRemoval(t *testing.T) {
+	a := []byte("i am here guys how are you doing this is a small test for chunk split and rolling hash")
+	b := []byte("ow are you doing test for chunk split and rolling hash")
+	delta := CalculateDelta(a, b)
 
+	if delta[0].Miss == false {
+		t.Errorf("Expected delta first block missing")
+	}
+
+	if delta[0].Start != 1 && delta[0].Offset != 16 {
+		t.Errorf("Expected delta range for missing block = 0-16")
+	}
 }
 
 func TestDetectChunkShifted(t *testing.T) {
+	o := []byte("i am here guys how are you doing this is a small test for chunk split and rolling hash")
+	c := []byte("i am here guys   how are you doing test for chunk split and rolling hash")
+	expect := map[int][]byte{
+		1: []byte("i am here guys   h"), // Match first block change
+	}
 
+	delta := CalculateDelta(o, c)
+	CheckMatch(delta, expect, t)
 }
