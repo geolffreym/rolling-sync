@@ -115,6 +115,7 @@ func (s *Sync) fill(signatures []Table) {
 	}
 }
 
+// Check if any block get removed
 func (s *Sync) IntegrityCheck() {
 	for i := range s.signatures {
 		if _, ok := s.matches[i]; !ok {
