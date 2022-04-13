@@ -100,7 +100,7 @@ func TestDetectChunkRemoval(t *testing.T) {
 	b := []byte("ow are you doing test for chunk split and rolling hash")
 	delta := CalculateDelta(a, b)
 
-	if delta[0].Miss == false {
+	if delta[0].Missing == false {
 		t.Errorf("Expected delta first block missing")
 	}
 

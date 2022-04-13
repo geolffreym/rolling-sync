@@ -18,10 +18,10 @@ import (
 const S = 16
 
 type Bytes struct {
-	Offset int
-	Start  int
-	Miss   bool
-	Lit    []byte
+	Offset  int
+	Start   int
+	Missing bool
+	Lit     []byte
 }
 
 type Table struct {
@@ -120,9 +120,9 @@ func (s *Sync) IntegrityCheck() {
 	for i := range s.signatures {
 		if _, ok := s.matches[i]; !ok {
 			s.matches[i] = Bytes{
-				Miss:   true,                            // Block not found
-				Start:  i * s.blockSize,                 // Start range of block to copy
-				Offset: (i * s.blockSize) + s.blockSize, // End block to copy
+				Missing: true,                            // Block not found
+				Start:   i * s.blockSize,                 // Start range of block to copy
+				Offset:  (i * s.blockSize) + s.blockSize, // End block to copy
 			}
 		}
 	}
@@ -131,8 +131,8 @@ func (s *Sync) IntegrityCheck() {
 // Process matches for bytes processed
 func (s *Sync) flushMatch(block int) {
 	// Store matches
-	s.match.Start = (block * s.blockSize)
-	s.match.Offset = (s.match.Start + s.blockSize)
+	s.match.Start = (block * s.blockSize)          // Block change start
+	s.match.Offset = (s.match.Start + s.blockSize) // Block change end
 	s.matches[block] = s.match
 	s.match = Bytes{}
 
