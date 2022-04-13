@@ -39,6 +39,9 @@ func TestIntegration(t *testing.T) {
 		t.Fatal("Expected to be able to read the V2 file")
 	}
 
+	// Match in block 2 the change "added"
+	// V1 "i am here guys how are you doing this is a small test for chunk split and rolling hash"
+	// V2 "i am here guys how are you doingadded this is a small test for chunk split and rolling hash"
 	delta := sync.Delta(signaturesFromFile, newFile)
 	if string(delta[2].Lit) != "added" {
 		t.Fatal("Expected match change from original in V2 file")
