@@ -34,7 +34,7 @@ Signatures:
 
 **/
 
-func CalculateDelta(a []byte, b []byte) map[int]Bytes {
+func CalculateDelta(a []byte, b []byte) map[int]*Bytes {
 
 	sync := New(1 << 4) // 16 bytes
 
@@ -53,7 +53,7 @@ func CalculateDelta(a []byte, b []byte) map[int]Bytes {
 	return sync.Delta(signatures, bufioB)
 }
 
-func CheckMatch(delta map[int]Bytes, expected map[int][]byte, t *testing.T) {
+func CheckMatch(delta map[int]*Bytes, expected map[int][]byte, t *testing.T) {
 
 	for i := range expected {
 		// Index not matched in delta

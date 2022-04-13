@@ -34,16 +34,16 @@ type Sync struct {
 	signatures []Table
 	s          hash.Hash
 	w          adler32.Adler32
-	match      Bytes
-	matches    map[int]Bytes
+	match      *Bytes
+	matches    map[int]*Bytes
 	checksums  map[uint32]map[string]int
 }
 
 func New(size int) *Sync {
 	return &Sync{
 		blockSize: size,
-		match:     Bytes{},
-		matches:   make(map[int]Bytes),
+		match:     &Bytes{},
+		matches:   make(map[int]*Bytes),
 		checksums: make(map[uint32]map[string]int),
 		s:         sha1.New(),
 		w:         *adler32.New(size),
@@ -117,7 +117,7 @@ func (s *Sync) fill(signatures []Table) {
 func (s *Sync) IntegrityCheck() {
 	for i := range s.signatures {
 		if _, ok := s.matches[i]; !ok {
-			s.matches[i] = Bytes{
+			s.matches[i] = &Bytes{
 				Missing: true,                            // Block not found
 				Start:   i * s.blockSize,                 // Start range of block to copy
 				Offset:  (i * s.blockSize) + s.blockSize, // End block to copy
@@ -132,12 +132,12 @@ func (s *Sync) flushMatch(block int) {
 	s.match.Start = (block * s.blockSize)          // Block change start
 	s.match.Offset = (s.match.Start + s.blockSize) // Block change end
 	s.matches[block] = s.match
-	s.match = Bytes{}
+	s.match = &Bytes{}
 
 }
 
 // Bytes provides a slice of the bytes written
-func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]Bytes {
+func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 	s.fill(signatures)
 	s.w.Reset()
 
