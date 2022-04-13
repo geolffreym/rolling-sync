@@ -23,7 +23,7 @@ import (
 func main() {
 
 	// Performance test
-	cpufile, err := os.Create("cpu.pprof")
+	cpufile, err := os.Create("cpu.proof")
 	err = pprof.StartCPUProfile(cpufile)
 	if err != nil {
 		panic(err)
