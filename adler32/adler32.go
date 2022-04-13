@@ -28,11 +28,8 @@ func (h *Adler32) Reset() {
 	h.Window = h.Window[:0]
 }
 
-// Keep  window chunk stored while get processed
+// Calculate initial checksum from byte slice
 func (h *Adler32) Write(data []byte) {
-	// https://en.wikipedia.org/wiki/Adler-32
-	// 0xffff = 65535 = 2^16 = the largest prime number smaller than 2^16
-	// At any position p in the input, the state of the rolling hash will depend only on the last s bytes of the file
 	//https://rsync.samba.org/tech_report/node3.html
 	for index, char := range data {
 		h.a += uint16(char)
