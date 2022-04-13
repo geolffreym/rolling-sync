@@ -101,7 +101,7 @@ func TestDetectChunkRemoval(t *testing.T) {
 	delta := CalculateDelta(a, b)
 
 	// Check for block 1 and block 3 removal
-	if delta[0].Missing == false || delta[3].Missing == false {
+	if delta[0].Missing == false && delta[3].Missing == false {
 		t.Errorf("Expected delta first block missing")
 	}
 
