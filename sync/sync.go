@@ -35,7 +35,6 @@ type Sync struct {
 	signatures []Table
 	s          hash.Hash
 	w          adler32.Adler32
-	Signature  *Signature
 	match      Bytes
 	matches    map[int]Bytes
 	checksums  map[uint32]map[string]int
@@ -45,7 +44,6 @@ func New(size int) *Sync {
 	return &Sync{
 		blockSize: size,
 		match:     Bytes{},
-		Signature: &Signature{},
 		matches:   make(map[int]Bytes),
 		checksums: make(map[uint32]map[string]int),
 		delta:     make([]byte, size),
