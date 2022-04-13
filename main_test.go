@@ -13,13 +13,13 @@ func TestIntegration(t *testing.T) {
 	io := IO.New(blockSize)
 	sync := Sync.New(blockSize)
 	// Memory performance improvement using bufio.Reader
-	original, err := io.Open("mock.txt")
+	v1, err := io.Open("mock.txt")
 	if err != nil {
 		t.Fatal("Expected to be able to read the original file")
 	}
 
 	// Fill signature in memory
-	sync.FillTable(original)
+	sync.FillTable(v1)
 	// Retrieve signatures
 	signatures := sync.Signatures()
 	// Write signatures
@@ -34,7 +34,7 @@ func TestIntegration(t *testing.T) {
 		t.Errorf("Expected written signatures equal to out signatures")
 	}
 
-	newFile, err := io.Open("mockV2.txt")
+	v2, err := io.Open("mockV2.txt")
 	if err != nil {
 		t.Fatal("Expected to be able to read the V2 file")
 	}
@@ -42,7 +42,7 @@ func TestIntegration(t *testing.T) {
 	// Match in block 2 the change "added"
 	// V1 "i am here guys how are you doing this is a small test for chunk split and rolling hash"
 	// V2 "i am here guys how are you doingadded this is a small test for chunk split and rolling hash"
-	delta := sync.Delta(signaturesFromFile, newFile)
+	delta := sync.Delta(signaturesFromFile, v2)
 	if string(delta[2].Lit) != "added" {
 		t.Fatal("Expected match change from original in V2 file")
 	}
