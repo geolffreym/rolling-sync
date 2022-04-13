@@ -31,6 +31,7 @@ func (h *Adler32) Reset() {
 
 // Calculate initial checksum from byte slice
 func (h *Adler32) Write(data []byte) {
+	//https://en.wikipedia.org/wiki/Adler-32
 	//https://rsync.samba.org/tech_report/node3.html
 	for index, char := range data {
 		h.a += uint16(char)
