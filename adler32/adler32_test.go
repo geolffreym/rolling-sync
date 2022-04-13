@@ -19,6 +19,23 @@ func TestWriteSum(t *testing.T) {
 	}
 }
 
+func TestWindowOverflow(t *testing.T) {
+	rolling := &Adler32{}
+
+	rolling.Write([]byte("abcdef"))
+	rolling.RollOut()           // remove a
+	rolling.RollOut()           // remove b
+	rolling.RollOut()           // remove c
+	rolling.RollOut()           // remove d
+	rolling.RollOut()           // remove e
+	rolling.RollOut()           // remove f
+	_, err := rolling.RollOut() // overflow
+
+	if err == nil {
+		t.Errorf("Expected error 'Window size equal 0'")
+	}
+}
+
 func TestRollIn(t *testing.T) {
 	rolling := &Adler32{}
 
