@@ -46,7 +46,7 @@ func New(size int) *Sync {
 		matches:   make(map[int]*Bytes),
 		checksums: make(map[uint32]map[string]int),
 		s:         sha1.New(),
-		w:         *adler32.New(size),
+		w:         *adler32.New(),
 	}
 }
 

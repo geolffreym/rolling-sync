@@ -14,7 +14,7 @@ type Adler32 struct {
 	a, b   uint16 // adler32 formula
 }
 
-func New(size int) *Adler32 {
+func New() *Adler32 {
 	return &Adler32{
 		Window: []byte{},
 		count:  0,

@@ -5,7 +5,7 @@ import (
 )
 
 func TestWriteSum(t *testing.T) {
-	rolling := &Adler32{}
+	rolling := New()
 
 	rolling.Write([]byte("how are you doing"))
 	w0 := rolling.Sum()
@@ -20,7 +20,7 @@ func TestWriteSum(t *testing.T) {
 }
 
 func TestWindowOverflow(t *testing.T) {
-	rolling := &Adler32{}
+	rolling := New()
 
 	rolling.Write([]byte("abcdef"))
 	rolling.RollOut()           // remove a
@@ -37,7 +37,7 @@ func TestWindowOverflow(t *testing.T) {
 }
 
 func TestRollIn(t *testing.T) {
-	rolling := &Adler32{}
+	rolling := New()
 
 	rolling.Write([]byte("ow are you doing"))
 	w0 := rolling.Sum()
@@ -69,7 +69,7 @@ func TestRollIn(t *testing.T) {
 }
 
 func TestRollOut(t *testing.T) {
-	rolling := &Adler32{}
+	rolling := New()
 
 	rolling.Write([]byte("w are you doing"))
 	w0 := rolling.Sum()
