@@ -5,19 +5,20 @@ package adler32
 
 import "errors"
 
+// The sums are done modulo 65521 (the largest prime number smaller than 216).
 const M = 65521
 
 type Adler32 struct {
-	Window  []byte
-	count   int    // Last position
-	a, b    uint16 // adler32 formula
+	Window []byte
+	count  int    // Last position
+	a, b   uint16 // adler32 formula
 }
 
 func New(size int) *Adler32 {
 	return &Adler32{
 		Window: []byte{},
 		count:  0,
-		a:      1,
+		a:      0,
 		b:      0,
 	}
 }
@@ -44,18 +45,19 @@ func (h *Adler32) Write(data []byte) {
 
 // Calculate and return Checksum
 func (h *Adler32) Sum() uint32 {
-	// x =  920 =  0x398  (base 16)
-	// y = 4582 = 0x11E6
+	// Enforce 16 bits
+	// a =  920 =  0x398  (base 16)
+	// b = 4582 = 0x11E6
 	// Output = 0x11E6 << 16 + 0x398 = 0x11E60398
-	return uint32(h.b)<<16 | uint32(h.a)
+	return uint32(h.b)<<16 | uint32(h.a)&0xFFFFF
 }
 
 func (h *Adler32) Count() int { return h.count }
 
 // Add byte to rolling checksum
 func (h *Adler32) RollIn(input byte) {
-	h.a += uint16(input)
-	h.b += h.a
+	h.a = (h.a + uint16(input)) % M
+	h.b = (h.b + h.a) % M
 	// Keep stored windows bytes while get processed
 	h.Window = append(h.Window, input)
 	h.count++
@@ -69,8 +71,8 @@ func (h *Adler32) RollOut() (byte, error) {
 	}
 
 	old := h.Window[0]
-	h.a = h.a - uint16(old)
-	h.b = h.b - (uint16(len(h.Window)) * uint16(old))
+	h.a = (h.a - uint16(old)) % M
+	h.b = (h.b - (uint16(len(h.Window)) * uint16(old))) % M
 	h.Window = h.Window[1:]
 	h.count--
 
