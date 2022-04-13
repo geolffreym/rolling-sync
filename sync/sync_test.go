@@ -113,7 +113,7 @@ func TestDetectChunkRemoval(t *testing.T) {
 	}
 
 	if !matchPositionForBlock3 {
-		t.Errorf("Expected delta range for missing block 1 = 48-64")
+		t.Errorf("Expected delta range for missing block 3 = 48-64")
 	}
 }
 
