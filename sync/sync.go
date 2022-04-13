@@ -132,7 +132,7 @@ func (s *Sync) flushMatch(block int) {
 	s.match.Start = (block * s.blockSize)          // Block change start
 	s.match.Offset = (s.match.Start + s.blockSize) // Block change end
 	s.matches[block] = s.match
-	s.match = &Bytes{}
+	s.match = &Bytes{} // New reference for next block
 
 }
 
