@@ -26,7 +26,7 @@ func TestSignatureBadWrite(t *testing.T) {
 	err := WriteSignature("signature.bin", signatures)
 
 	if err == nil {
-		t.Error("Expected error with invalid signatures to write")
+		t.Error("Expected error with empty signatures to write")
 	}
 }
 
