@@ -174,7 +174,7 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]Bytes {
 		if notFound == nil {
 			// Process matches
 			s.flushMatch(index)
-			// store block processed
+			// Reset state
 			s.w.Reset()
 
 		}
