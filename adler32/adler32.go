@@ -10,7 +10,7 @@ const M = 65521
 type Adler32 struct {
 	Window  []byte
 	count   int    // Last position
-	a, b, n uint16 // adler32 formula
+	a, b    uint16 // adler32 formula
 }
 
 func New(size int) *Adler32 {
