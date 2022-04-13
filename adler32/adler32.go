@@ -5,7 +5,7 @@ package adler32
 
 import "errors"
 
-// The sums are done modulo 65521 (the largest prime number smaller than 216).
+// The sums are done modulo 65521 (the largest prime number smaller than 2^16).
 const M = 65521
 
 type Adler32 struct {
