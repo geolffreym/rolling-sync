@@ -97,15 +97,23 @@ func TestDetectChunkAdd(t *testing.T) {
 
 func TestDetectChunkRemoval(t *testing.T) {
 	a := []byte("i am here guys how are you doing this is a small test for chunk split and rolling hash")
-	b := []byte("ow are you doing test for chunk split and rolling hash")
+	b := []byte("ow are you doing this is a small split and rolling hash")
 	delta := CalculateDelta(a, b)
 
-	if delta[0].Missing == false {
+	// Check for block 1 and block 3 removal
+	if delta[0].Missing == false || delta[3].Missing == false {
 		t.Errorf("Expected delta first block missing")
 	}
 
-	if delta[0].Start != 1 && delta[0].Offset != 16 {
-		t.Errorf("Expected delta range for missing block = 0-16")
+	matchPositionForBlock1 := delta[0].Start == 0 && delta[0].Offset == 16
+	matchPositionForBlock3 := delta[3].Start == 48 && delta[3].Offset == 64
+
+	if !matchPositionForBlock1 {
+		t.Errorf("Expected delta range for missing block 1 = 0-16")
+	}
+
+	if !matchPositionForBlock3 {
+		t.Errorf("Expected delta range for missing block 1 = 0-16")
 	}
 }
 
