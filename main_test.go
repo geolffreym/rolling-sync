@@ -39,7 +39,7 @@ func TestIntegration(t *testing.T) {
 		t.Fatal("Expected to be able to read the V2 file")
 	}
 
-	delta := sync.Delta(signatures, newFile)
+	delta := sync.Delta(signaturesFromFile, newFile)
 	if string(delta[2].Lit) != "added" {
 		t.Fatal("Expected match change from original in V2 file")
 	}
