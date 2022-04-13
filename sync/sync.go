@@ -31,7 +31,6 @@ type Table struct {
 
 type Sync struct {
 	blockSize  int
-	delta      []byte
 	signatures []Table
 	s          hash.Hash
 	w          adler32.Adler32
@@ -46,7 +45,6 @@ func New(size int) *Sync {
 		match:     Bytes{},
 		matches:   make(map[int]Bytes),
 		checksums: make(map[uint32]map[string]int),
-		delta:     make([]byte, size),
 		s:         sha1.New(),
 		w:         *adler32.New(size),
 	}
