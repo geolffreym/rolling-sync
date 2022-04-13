@@ -9,13 +9,11 @@ import (
 
 type IO struct {
 	blockSize int
-	Signature *Signature
 }
 
 func New(blockSize int) *IO {
 	return &IO{
 		blockSize: blockSize,
-		Signature: &Signature{},
 	}
 }
 

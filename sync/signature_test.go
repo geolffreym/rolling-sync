@@ -1,19 +1,17 @@
-package fileio
+package sync
 
 import (
 	"os"
 	"reflect"
 	"testing"
-
-	"github.com/geolffreym/rolling-sync/sync"
 )
 
 func TestSignatureReadWrite(t *testing.T) {
 	// Read file to split in chunks
-	io := IO{blockSize: 1 << 4}
+	io := Sync{blockSize: 1 << 4}
 
-	signature := sync.Table{Weak: 0000, Strong: "abc123"}
-	signatures := []sync.Table{signature}
+	signature := Table{Weak: 0000, Strong: "abc123"}
+	signatures := []Table{signature}
 	io.Signature.Write("signature.bin", signatures)
 	out, _ := io.Signature.Read("signature.bin")
 
@@ -24,8 +22,8 @@ func TestSignatureReadWrite(t *testing.T) {
 }
 
 func TestSignatureBadWrite(t *testing.T) {
-	io := IO{blockSize: 1 << 4}
-	signatures := []sync.Table{}
+	io := Sync{blockSize: 1 << 4}
+	signatures := []Table{}
 	err := io.Signature.Write("signature.bin", signatures)
 
 	if err == nil {
@@ -34,8 +32,8 @@ func TestSignatureBadWrite(t *testing.T) {
 }
 
 func TestSignatureBadFileWrite(t *testing.T) {
-	io := IO{blockSize: 1 << 4}
-	signatures := []sync.Table{}
+	io := Sync{blockSize: 1 << 4}
+	signatures := []Table{}
 	err := io.Signature.Write("notexists.bin", signatures)
 
 	if err == nil {
@@ -44,7 +42,7 @@ func TestSignatureBadFileWrite(t *testing.T) {
 }
 
 func TestSignatureBadFileRead(t *testing.T) {
-	io := IO{blockSize: 1 << 4}
+	io := Sync{blockSize: 1 << 4}
 	_, err := io.Signature.Read("notexists.bin")
 
 	if err == nil {
@@ -54,7 +52,7 @@ func TestSignatureBadFileRead(t *testing.T) {
 
 func TestSignatureBadDataRead(t *testing.T) {
 	file := "invalid.bin"
-	io := IO{blockSize: 1 << 4}
+	io := Sync{blockSize: 1 << 4}
 
 	//  Performed writing operations
 	f, _ := os.Create(file)

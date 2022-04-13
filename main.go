@@ -37,15 +37,19 @@ func main() {
 	sync := Sync.New(blockSize)
 
 	// Memory performance improvement using bufio.Reader
-	reader, err := io.Open("mock.txt")
+	original, err := io.Open("mock.txt")
+	if err != nil {
+		panic("Fail opening mock.txt")
+	}
+
 	newFile, err := io.Open("mockV2.txt")
+	if err != nil {
+		panic("Fail opening mockV2.txt")
+	}
 
 	for i := 0; i <= 100000; i++ {
-
-		// For each block slice from file
-		sync.FillTable(reader)
+		sync.FillTable(original)
 		signatures := sync.Signatures()
-		// TODO write delta if needed
 		sync.Delta(signatures, newFile)
 	}
 

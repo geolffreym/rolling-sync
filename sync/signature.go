@@ -1,17 +1,15 @@
-package fileio
+package sync
 
 import (
 	"encoding/gob"
 	"errors"
 	"os"
-
-	"github.com/geolffreym/rolling-sync/sync"
 )
 
 type Signature struct{}
 
 // Write signature
-func (s *Signature) Write(file string, signatures []sync.Table) error {
+func (s *Signature) Write(file string, signatures []Table) error {
 
 	if len(signatures) == 0 {
 		return errors.New("No signatures to write")
@@ -30,14 +28,14 @@ func (s *Signature) Write(file string, signatures []sync.Table) error {
 }
 
 // Read signature
-func (s *Signature) Read(file string) ([]sync.Table, error) {
+func (s *Signature) Read(file string) ([]Table, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
 	}
 
 	defer f.Close()
-	read := []sync.Table{}
+	read := []Table{}
 	dataDecoder := gob.NewDecoder(f)
 	err = dataDecoder.Decode(&read)
 
