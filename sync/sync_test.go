@@ -83,6 +83,23 @@ func TestDetectChunkChange(t *testing.T) {
 
 }
 
+func TestSeekMatchBlock(t *testing.T) {
+	a := []byte("hello world this is a test for my seek block")
+	bytesA := bytes.NewReader(a)
+	bufioA := bufio.NewReader(bytesA)
+	sync := New(1 << 3) // 8 bytes
+
+	// For each block slice from file
+	sync.FillTable(bufioA)
+	sync.fillChecksum(sync.Signatures())
+	weakSum := uint32(231277338)
+	index, err := sync.seek(weakSum, []byte("rld this"))
+
+	if index != 1 || err != nil {
+		t.Errorf("Expected index 1 for weakSum=231277338")
+	}
+}
+
 func TestDetectChunkAdd(t *testing.T) {
 	a := []byte("i am here guys how are you doing this is a small test for chunk split and rolling hash")
 	b := []byte("i am here guys how are you doingadded this is a small test for chunk split and rolling hash")

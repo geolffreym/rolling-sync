@@ -103,7 +103,7 @@ func (s *Sync) seek(w uint32, block []byte) (int, error) {
 }
 
 // Populate checksum tables
-func (s *Sync) fill(signatures []Table) {
+func (s *Sync) fillChecksum(signatures []Table) {
 	// Keep signatures in memory while get processed
 	s.signatures = signatures
 	for i, check := range signatures {
@@ -138,7 +138,7 @@ func (s *Sync) flushMatch(block int) {
 
 // Bytes provides a slice of the bytes written
 func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
-	s.fill(signatures)
+	s.fillChecksum(signatures)
 	s.w.Reset()
 
 	// Keep tracking changes
