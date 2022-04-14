@@ -136,7 +136,7 @@ func (s *Sync) flushMatch(block int) {
 
 }
 
-// Bytes provides a slice of the bytes written
+// Calculate "delta" and return match diffs
 func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 	s.fillChecksum(signatures)
 	s.w.Reset()
