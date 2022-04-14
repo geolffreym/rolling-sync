@@ -140,7 +140,7 @@ func TestDetectChunkRemoval(t *testing.T) {
 
 	// Check for block 1 and block 3 removal
 	if delta[0].Missing == false && delta[3].Missing == false {
-		t.Errorf("Expected delta first block missing")
+		t.Errorf("Expected delta first and third block missing")
 	}
 
 	matchPositionForBlock1 := delta[0].Start == 0 && delta[0].Offset == 16
