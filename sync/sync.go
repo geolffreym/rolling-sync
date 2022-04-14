@@ -51,7 +51,7 @@ func New(size int) *Sync {
 }
 
 // Fill signature from blocks
-// Weak + Strong hash table to avoid collisions
+// Weak + Strong hash table to avoid collisions + perf
 func (s *Sync) FillTable(reader *bufio.Reader) {
 
 	for {
@@ -136,7 +136,7 @@ func (s *Sync) flushMatch(block int) {
 
 }
 
-// Bytes provides a slice of the bytes written
+// Calculate "delta" and return match diffs
 func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 	s.fillChecksum(signatures)
 	s.w.Reset()
@@ -152,6 +152,7 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 
 		// Add new el to checksum
 		s.w.RollIn(c)
+                // Keep moving forward if not data ready to analize
 		if s.w.Count() < s.blockSize {
 			continue
 		}
