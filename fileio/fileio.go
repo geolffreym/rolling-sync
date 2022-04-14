@@ -17,7 +17,7 @@ func New(blockSize int) *IO {
 	}
 }
 
-// Process file stats
+// Open file and ensure split to at least two chunks on any sufficiently sized data
 func (o *IO) Open(input string) (*bufio.Reader, error) {
 	// Open file to split
 	file, err := os.Open(input)
