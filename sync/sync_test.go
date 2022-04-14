@@ -74,7 +74,7 @@ func TestDetectChunkChange(t *testing.T) {
 	b := []byte("i here guys how are you doing this is a mall test chunk split and rolling hash")
 	expect := map[int][]byte{
 		1: []byte("i here guys h"),               // Match first block change
-		4: []byte(" this is a mall test chunk "), // Match blocks 4 changed
+		4: []byte(" this is a mall test chunk "), // Match block 4 changed
 
 	}
 
@@ -101,7 +101,7 @@ func TestSeekMatchBlock(t *testing.T) {
 }
 
 func TestFillChecksum(t *testing.T) {
-	a := []byte("hello world this is a test for my seek block")
+	a := []byte("hello world this is a test for my checksum hash table")
 	bytesA := bytes.NewReader(a)
 	bufioA := bufio.NewReader(bytesA)
 	sync := New(1 << 3) // 8 bytes
