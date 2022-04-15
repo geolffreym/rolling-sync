@@ -179,10 +179,10 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 		}
 
 		// Checksum
-		w := s.w.Sum()
+		weak := s.w.Sum()
 		// Check if weak and strong match in signatures
 		// Match found upgrade block
-		index, notFound := s.seek(checksums, w, s.w.Window)
+		index, notFound := s.seek(checksums, weak, s.w.Window)
 		if notFound == nil {
 			// Process matches
 			match = s.flushMatch(index, match)
