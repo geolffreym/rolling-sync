@@ -90,9 +90,9 @@ func TestSeekMatchBlock(t *testing.T) {
 
 	// For each block slice from file
 	signatures := sync.FillTable(bufioA)
-	checksums := sync.fillChecksum(signatures)
+	indexes := sync.indexTable(signatures)
 	weakSum := uint32(231277338)
-	index, err := sync.seek(checksums, weakSum, []byte("rld this"))
+	index, err := sync.seek(indexes, weakSum, []byte("rld this"))
 
 	if index != 1 || err != nil {
 		t.Errorf("Expected index 1 for weakSum=231277338")
@@ -107,12 +107,12 @@ func TestFillChecksum(t *testing.T) {
 
 	// For each block slice from file
 	signatures := sync.FillTable(bufioA)
-	checksums := sync.fillChecksum(signatures)
+	indexes := sync.indexTable(signatures)
 
 	for i, check := range signatures {
 		weak := check.Weak
 		strong := check.Strong
-		if checksums[weak][strong] != i {
+		if indexes[weak][strong] != i {
 			t.Errorf("Expected index %d for %d:%s hashes", i, weak, strong)
 		}
 	}

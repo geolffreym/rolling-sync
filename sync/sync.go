@@ -9,7 +9,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
-	"hash"
 	"io"
 
 	"github.com/geolffreym/rolling-sync/adler32"
@@ -36,15 +35,11 @@ type Table struct {
 
 type Sync struct {
 	blockSize int
-	s         hash.Hash       // Strong signature module
-	w         adler32.Adler32 // weak signature module
 }
 
 func New(size int) *Sync {
 	return &Sync{
 		blockSize: size,
-		s:         sha1.New(),
-		w:         *adler32.New(),
 	}
 }
 
@@ -79,21 +74,21 @@ func (s *Sync) FillTable(reader *bufio.Reader) []Table {
 
 // Calc strong md5 checksum
 func (s *Sync) strong(block []byte) string {
-	s.s.Write(block)
-	defer s.s.Reset() // Reset after call Sum and return encoded digest
-	return hex.EncodeToString(s.s.Sum(nil))
+	strong := sha1.New()
+	strong.Write(block)
+	return hex.EncodeToString(strong.Sum(nil))
 }
 
 // Calc weak adler32 checksum
 func (s *Sync) weak(block []byte) uint32 {
-	s.w.Reset()
-	s.w.Write(block)
-	return s.w.Sum()
+	weak := adler32.New()
+	weak.Write(block)
+	return weak.Sum()
 }
 
 // Seek indexes in table and return block number
-func (s *Sync) seek(checksums map[uint32]map[string]int, w uint32, block []byte) (int, error) {
-	if subfield, found := checksums[w]; found {
+func (s *Sync) seek(checksums map[uint32]map[string]int, weak uint32, block []byte) (int, error) {
+	if subfield, found := checksums[weak]; found {
 		st := s.strong(block)
 		if _, ok := subfield[st]; ok {
 			return subfield[st], nil
@@ -103,18 +98,18 @@ func (s *Sync) seek(checksums map[uint32]map[string]int, w uint32, block []byte)
 	return 0, errors.New("Not index in hash table")
 }
 
-// Populate checksum tables to match block position
+// Populate tables indexes to match block position
 // {weak strong} = 0, {weak, strong} = 1
-func (s *Sync) fillChecksum(signatures []Table) map[uint32]map[string]int {
-	checksums := make(map[uint32]map[string]int)
+func (s *Sync) indexTable(signatures []Table) map[uint32]map[string]int {
+	indexes := make(map[uint32]map[string]int)
 	// Keep signatures in memory while get processed
 	for i, check := range signatures {
 		d := make(map[string]int)
-		checksums[check.Weak] = d
+		indexes[check.Weak] = d
 		d[check.Strong] = i
 	}
 
-	return checksums
+	return indexes
 }
 
 // Check if any block get removed and return the cleaned/amplified matches with missing blocks
@@ -133,7 +128,7 @@ func (s *Sync) IntegrityCheck(signatures []Table, matches map[int]*Bytes) map[in
 }
 
 // Calculate matches ranges bytes for differences
-func (s *Sync) flushMatch(block int, match *Bytes) *Bytes {
+func (s *Sync) calcDiffRange(block int, match *Bytes) *Bytes {
 	// Store matches
 	match.Start = (block * s.blockSize)        // Block change start
 	match.Offset = (match.Start + s.blockSize) // Block change endwhereas it could be copied-on-write to a new data structureAppend block to match diffing list
@@ -143,10 +138,10 @@ func (s *Sync) flushMatch(block int, match *Bytes) *Bytes {
 // Calculate "delta" and return match diffs
 // Return map "Bytes" matches, each Byte keep position and literal diff matches
 func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
-
-	s.w.Reset() // Reset weak module state
-	// Populate checksum block position based on weak + strong signatures
-	checksums := s.fillChecksum(signatures)
+	// Weak checksum adler32
+	weak := adler32.New()
+	// Populate indexes by block position based on weak + strong signatures
+	indexes := s.indexTable(signatures)
 	// New struct for diff state handling
 	match := &Bytes{}
 	matches := make(map[int]*Bytes)
@@ -156,39 +151,37 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 		// Get byte from reader
 		// eg. reader = [abcd], byte = a...
 		c, err := reader.ReadByte()
-		// If reader == end of file or error trying to get byte
+		// If reader == EOF end of file or error trying to get byte
 		if err == io.EOF || err != nil {
 			break
 		}
 
 		// Add new el to checksum
-		s.w.RollIn(c)
-		// Keep moving forward if not data ready to analize
-		if s.w.Count() < s.blockSize {
+		weak.RollIn(c)
+		// Keep moving forward if not data ready
+		if weak.Count() < s.blockSize {
 			continue
 		}
 
 		// Start moving window over data
 		// If written bytes overflow current size and not match found
-		if s.w.Count() > s.blockSize {
+		if weak.Count() > s.blockSize {
 			// Subtract initial byte to switch left <<  bytes
 			// eg. data=abcdef, window=4 => [abcd]: a << [bcd] << e
-			removed, _ := s.w.RollOut()
+			removed, _ := weak.RollOut()
 			// Store literal matches
 			match.Lit = append(match.Lit, removed)
 		}
 
-		// Checksum
-		weak := s.w.Sum()
+		checksum := weak.Sum()
 		// Check if weak and strong match in checksums position based signatures
-		// If Match found then upgrade block
-		index, notFound := s.seek(checksums, weak, s.w.Window)
+		index, notFound := s.seek(indexes, checksum, weak.Window)
 		if notFound == nil {
 			// Process matches
-			match = s.flushMatch(index, match)
+			match = s.calcDiffRange(index, match)
 			matches[index] = match // Store block matches
 			// Reset state
-			s.w.Reset()
+			weak.Reset()
 			// Reset/Add new struct for new block match
 			match = &Bytes{}
 
