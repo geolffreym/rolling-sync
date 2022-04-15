@@ -26,7 +26,7 @@ func (h *Adler32) Reset() {
 	h.a = 0
 	h.b = 0
 	h.count = 0
-	h.Window = h.Window[:0]
+	h.Window = nil
 }
 
 // Calculate initial checksum from byte slice

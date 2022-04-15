@@ -24,7 +24,7 @@ type Bytes struct {
 	Offset  int    // End of diff position in block
 	Start   int    // Start of diff position in block
 	Missing bool   // Block not found
-	Lit     []byte // Literal bytes to replace
+	Lit     []byte // Literal bytes to replace in delta
 }
 
 // Struct to handle weak + strong checksum operations
@@ -86,9 +86,9 @@ func (s *Sync) weak(block []byte) uint32 {
 	return weak.Sum()
 }
 
-// Seek indexes in table and return block number
-func (s *Sync) seek(checksums map[uint32]map[string]int, weak uint32, block []byte) (int, error) {
-	if subfield, found := checksums[weak]; found {
+// Seek block in indexes and return block number or error if not found
+func (s *Sync) seek(indexes map[uint32]map[string]int, weak uint32, block []byte) (int, error) {
+	if subfield, found := indexes[weak]; found {
 		st := s.strong(block)
 		if _, ok := subfield[st]; ok {
 			return subfield[st], nil
@@ -127,14 +127,6 @@ func (s *Sync) IntegrityCheck(signatures []Table, matches map[int]*Bytes) map[in
 	return matches
 }
 
-// Calculate matches ranges bytes for differences
-func (s *Sync) calcDiffRange(block int, match *Bytes) *Bytes {
-	// Store matches
-	match.Start = (block * s.blockSize)        // Block change start
-	match.Offset = (match.Start + s.blockSize) // Block change endwhereas it could be copied-on-write to a new data structureAppend block to match diffing list
-	return match
-}
-
 // Calculate "delta" and return match diffs
 // Return map "Bytes" matches, each Byte keep position and literal diff matches
 func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
@@ -142,8 +134,8 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 	weak := adler32.New()
 	// Populate indexes by block position based on weak + strong signatures
 	indexes := s.indexTable(signatures)
-	// New struct for diff state handling
-	match := &Bytes{}
+	// Literal matches keep literal diff bytes stored
+	literalMatches := []byte{}
 	matches := make(map[int]*Bytes)
 
 	// Keep tracking changes
@@ -170,21 +162,23 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 			// eg. data=abcdef, window=4 => [abcd]: a << [bcd] << e
 			removed, _ := weak.RollOut()
 			// Store literal matches
-			match.Lit = append(match.Lit, removed)
+			literalMatches = append(literalMatches, removed)
 		}
 
-		checksum := weak.Sum()
+		checksum := weak.Sum() // Calc checksum based on rolling hash
 		// Check if weak and strong match in checksums position based signatures
 		index, notFound := s.seek(indexes, checksum, weak.Window)
 		if notFound == nil {
-			// Process matches
-			match = s.calcDiffRange(index, match)
-			matches[index] = match // Store block matches
-			// Reset state
-			weak.Reset()
-			// Reset/Add new struct for new block match
-			match = &Bytes{}
+			// Store block matches
+			matches[index] = &Bytes{
+				Start:  (index * s.blockSize),                 // Block change start
+				Offset: ((index * s.blockSize) + s.blockSize), // Block change endwhereas it could be copied-on-write to a new data structureAppend block to match diffing list
+				Lit:    literalMatches,
+			}
 
+			// Reset state
+			literalMatches = nil
+			weak.Reset()
 		}
 
 	}
