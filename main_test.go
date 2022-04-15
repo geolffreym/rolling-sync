@@ -19,9 +19,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	// Fill signature in memory
-	sync.FillTable(v1)
-	// Retrieve signatures
-	signatures := sync.Signatures()
+	signatures := sync.FillTable(v1)
 	// Write signatures
 	// Simulation step for signatures write and read
 	// Simulate split operation for signatures

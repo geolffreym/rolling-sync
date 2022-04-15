@@ -46,8 +46,7 @@ func CalculateDelta(a []byte, b []byte) map[int]*Bytes {
 	bufioB := bufio.NewReader(bytesB)
 
 	// For each block slice from file
-	sync.FillTable(bufioA)
-	signatures := sync.Signatures()
+	signatures := sync.FillTable(bufioA)
 	// TODO here signatures could be written and read from file.
 	// using same signatures directly in for test purpose
 	return sync.Delta(signatures, bufioB)
@@ -90,10 +89,10 @@ func TestSeekMatchBlock(t *testing.T) {
 	sync := New(1 << 3) // 8 bytes
 
 	// For each block slice from file
-	sync.FillTable(bufioA)
-	sync.fillChecksum(sync.Signatures())
+	signatures := sync.FillTable(bufioA)
+	checksums := sync.fillChecksum(signatures)
 	weakSum := uint32(231277338)
-	index, err := sync.seek(weakSum, []byte("rld this"))
+	index, err := sync.seek(checksums, weakSum, []byte("rld this"))
 
 	if index != 1 || err != nil {
 		t.Errorf("Expected index 1 for weakSum=231277338")
@@ -107,14 +106,13 @@ func TestFillChecksum(t *testing.T) {
 	sync := New(1 << 3) // 8 bytes
 
 	// For each block slice from file
-	signatures := sync.Signatures()
-	sync.FillTable(bufioA)
-	sync.fillChecksum(signatures)
+	signatures := sync.FillTable(bufioA)
+	checksums := sync.fillChecksum(signatures)
 
 	for i, check := range signatures {
 		weak := check.Weak
 		strong := check.Strong
-		if sync.checksums[weak][strong] != i {
+		if checksums[weak][strong] != i {
 			t.Errorf("Expected index %d for %d:%s hashes", i, weak, strong)
 		}
 	}

@@ -48,8 +48,7 @@ func main() {
 	}
 
 	for i := 0; i <= 100000; i++ {
-		sync.FillTable(v1)
-		signatures := sync.Signatures()
+		signatures := sync.FillTable(v1)
 		sync.Delta(signatures, v2)
 	}
 

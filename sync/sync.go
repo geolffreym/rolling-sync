@@ -35,17 +35,14 @@ type Table struct {
 }
 
 type Sync struct {
-	blockSize  int
-	signatures []Table
-	s          hash.Hash       // Strong signature module
-	w          adler32.Adler32 // weak signature module
-	checksums  map[uint32]map[string]int
+	blockSize int
+	s         hash.Hash       // Strong signature module
+	w         adler32.Adler32 // weak signature module
 }
 
 func New(size int) *Sync {
 	return &Sync{
 		blockSize: size,
-		checksums: make(map[uint32]map[string]int),
 		s:         sha1.New(),
 		w:         *adler32.New(),
 	}
@@ -53,9 +50,10 @@ func New(size int) *Sync {
 
 // Fill signature from blocks
 // Weak + Strong hash table to avoid collisions + perf
-func (s *Sync) FillTable(reader *bufio.Reader) {
+func (s *Sync) FillTable(reader *bufio.Reader) []Table {
 	//Read chunks from file
 	block := make([]byte, s.blockSize)
+	signatures := []Table{}
 
 	for {
 		// Add chunks to buffer
@@ -70,12 +68,13 @@ func (s *Sync) FillTable(reader *bufio.Reader) {
 		weak := s.weak(block)
 		strong := s.strong(block)
 		// Keep signatures while get written
-		s.signatures = append(
-			s.signatures,
+		signatures = append(
+			signatures,
 			Table{Weak: weak, Strong: strong},
 		)
-
 	}
+
+	return signatures
 }
 
 // Calc strong md5 checksum
@@ -93,8 +92,8 @@ func (s *Sync) weak(block []byte) uint32 {
 }
 
 // Seek indexes in table and return block number
-func (s *Sync) seek(w uint32, block []byte) (int, error) {
-	if subfield, found := s.checksums[w]; found {
+func (s *Sync) seek(checksums map[uint32]map[string]int, w uint32, block []byte) (int, error) {
+	if subfield, found := checksums[w]; found {
 		st := s.strong(block)
 		if _, ok := subfield[st]; ok {
 			return subfield[st], nil
@@ -106,19 +105,21 @@ func (s *Sync) seek(w uint32, block []byte) (int, error) {
 
 // Populate checksum tables to match block position
 // {weak strong} = 0, {weak, strong} = 1
-func (s *Sync) fillChecksum(signatures []Table) {
+func (s *Sync) fillChecksum(signatures []Table) map[uint32]map[string]int {
+	checksums := make(map[uint32]map[string]int)
 	// Keep signatures in memory while get processed
-	s.signatures = signatures
 	for i, check := range signatures {
 		d := make(map[string]int)
-		s.checksums[check.Weak] = d
+		checksums[check.Weak] = d
 		d[check.Strong] = i
 	}
+
+	return checksums
 }
 
 // Check if any block get removed
-func (s *Sync) IntegrityCheck(matches map[int]*Bytes) map[int]*Bytes {
-	for i := range s.signatures {
+func (s *Sync) IntegrityCheck(signatures []Table, matches map[int]*Bytes) map[int]*Bytes {
+	for i := range signatures {
 		if _, ok := matches[i]; !ok {
 			matches[i] = &Bytes{
 				Missing: true,                            // Block not found
@@ -142,10 +143,10 @@ func (s *Sync) flushMatch(block int, match *Bytes) *Bytes {
 // Calculate "delta" and return match diffs
 // Return map "Bytes" matches, each Byte keep position and literal diff matches
 func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
+
+	s.w.Reset() // Reset weak module state
 	// Populate checksum block position based on weak + strong signatures
-	s.fillChecksum(signatures)
-	// Reset weak module state
-	s.w.Reset()
+	checksums := s.fillChecksum(signatures)
 	// New struct for diff state handling
 	match := &Bytes{}
 	matches := make(map[int]*Bytes)
@@ -181,7 +182,7 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 		w := s.w.Sum()
 		// Check if weak and strong match in signatures
 		// Match found upgrade block
-		index, notFound := s.seek(w, s.w.Window)
+		index, notFound := s.seek(checksums, w, s.w.Window)
 		if notFound == nil {
 			// Process matches
 			match = s.flushMatch(index, match)
@@ -197,12 +198,8 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 
 	// Finally check the blocks integrity
 	// Missing blocks?
-	// Return cleaned delta matches
-	return s.IntegrityCheck(matches)
+	// Return cleaned/amplified delta matches
+	matches = s.IntegrityCheck(signatures, matches)
+	return matches
 
-}
-
-// Return signatures tables
-func (s *Sync) Signatures() []Table {
-	return s.signatures
 }
