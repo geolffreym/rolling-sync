@@ -131,7 +131,7 @@ func (s *Sync) IntegrityCheck(matches map[int]*Bytes) map[int]*Bytes {
 	return matches
 }
 
-// Process matches for ranges
+// Calculate matches ranges bytes for differences
 func (s *Sync) flushMatch(block int, match *Bytes) *Bytes {
 	// Store matches
 	match.Start = (block * s.blockSize)        // Block change start
