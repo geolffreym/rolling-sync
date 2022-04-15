@@ -39,14 +39,12 @@ type Sync struct {
 	signatures []Table
 	s          hash.Hash       // Strong signature module
 	w          adler32.Adler32 // weak signature module
-	matches    map[int]*Bytes
 	checksums  map[uint32]map[string]int
 }
 
 func New(size int) *Sync {
 	return &Sync{
 		blockSize: size,
-		matches:   make(map[int]*Bytes),
 		checksums: make(map[uint32]map[string]int),
 		s:         sha1.New(),
 		w:         *adler32.New(),
@@ -119,25 +117,26 @@ func (s *Sync) fillChecksum(signatures []Table) {
 }
 
 // Check if any block get removed
-func (s *Sync) IntegrityCheck() {
+func (s *Sync) IntegrityCheck(matches map[int]*Bytes) map[int]*Bytes {
 	for i := range s.signatures {
-		if _, ok := s.matches[i]; !ok {
-			s.matches[i] = &Bytes{
+		if _, ok := matches[i]; !ok {
+			matches[i] = &Bytes{
 				Missing: true,                            // Block not found
 				Start:   i * s.blockSize,                 // Start range of block to copy
 				Offset:  (i * s.blockSize) + s.blockSize, // End block to copy
 			}
 		}
 	}
+
+	return matches
 }
 
-// Process matches for bytes processed
+// Process matches for ranges
 func (s *Sync) flushMatch(block int, match *Bytes) *Bytes {
 	// Store matches
 	match.Start = (block * s.blockSize)        // Block change start
 	match.Offset = (match.Start + s.blockSize) // Block change endwhereas it could be copied-on-write to a new data structureAppend block to match diffing list
-	s.matches[block] = match                   // Append matched block to matches
-	return &Bytes{}                            // Reset/Add new struct for new block match
+	return match
 }
 
 // Calculate "delta" and return match diffs
@@ -149,6 +148,7 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 	s.w.Reset()
 	// New struct for diff state handling
 	match := &Bytes{}
+	matches := make(map[int]*Bytes)
 
 	// Keep tracking changes
 	for {
@@ -185,8 +185,11 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 		if notFound == nil {
 			// Process matches
 			match = s.flushMatch(index, match)
+			matches[index] = match // Store block matches
 			// Reset state
 			s.w.Reset()
+			// Reset/Add new struct for new block match
+			match = &Bytes{}
 
 		}
 
@@ -194,8 +197,8 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 
 	// Finally check the blocks integrity
 	// Missing blocks?
-	s.IntegrityCheck()
-	return s.matches
+	// Return cleaned delta matches
+	return s.IntegrityCheck(matches)
 
 }
 

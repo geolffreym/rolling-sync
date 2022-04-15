@@ -143,6 +143,7 @@ func TestDetectChunkRemoval(t *testing.T) {
 		t.Errorf("Expected delta first and third block missing")
 	}
 
+	// Match block missing position should be eq to expected based on block bytes size
 	matchPositionForBlock1 := delta[0].Start == 0 && delta[0].Offset == 16
 	matchPositionForBlock3 := delta[3].Start == 48 && delta[3].Offset == 64
 
