@@ -17,13 +17,15 @@ import (
 
 const S = 16
 
+// Bytes store block differences
 type Bytes struct {
-	Offset  int
-	Start   int
-	Missing bool
-	Lit     []byte
+	Offset  int    // End of diff position in block
+	Start   int    // Start of diff position in block
+	Missing bool   // Block not found
+	Lit     []byte // Literal bytes to replace
 }
 
+// Struct to handle weak + strong checksum operations
 type Table struct {
 	Weak   uint32
 	Strong string
@@ -32,8 +34,8 @@ type Table struct {
 type Sync struct {
 	blockSize  int
 	signatures []Table
-	s          hash.Hash
-	w          adler32.Adler32
+	s          hash.Hash       // Strong signature module
+	w          adler32.Adler32 // weak signature module
 	match      *Bytes
 	matches    map[int]*Bytes
 	checksums  map[uint32]map[string]int
@@ -53,10 +55,11 @@ func New(size int) *Sync {
 // Fill signature from blocks
 // Weak + Strong hash table to avoid collisions + perf
 func (s *Sync) FillTable(reader *bufio.Reader) {
+	//Read chunks from file
+	block := make([]byte, s.blockSize)
 
 	for {
-		//Read chunks from file
-		block := make([]byte, s.blockSize)
+		// Add chunks to buffer
 		bytesRead, err := reader.Read(block)
 		// Stop if not bytes read or end to file
 		if bytesRead == 0 || err == io.EOF {
@@ -79,7 +82,7 @@ func (s *Sync) FillTable(reader *bufio.Reader) {
 // Calc strong md5 checksum
 func (s *Sync) strong(block []byte) string {
 	s.s.Write(block)
-	defer s.s.Reset()
+	defer s.s.Reset() // Reset after call Sum and return encoded digest
 	return hex.EncodeToString(s.s.Sum(nil))
 }
 
@@ -102,7 +105,8 @@ func (s *Sync) seek(w uint32, block []byte) (int, error) {
 	return 0, errors.New("Not index in hash table")
 }
 
-// Populate checksum tables
+// Populate checksum tables to match block position
+// {weak strong} = 0, {weak, strong} = 1
 func (s *Sync) fillChecksum(signatures []Table) {
 	// Keep signatures in memory while get processed
 	s.signatures = signatures
@@ -131,14 +135,17 @@ func (s *Sync) flushMatch(block int) {
 	// Store matches
 	s.match.Start = (block * s.blockSize)          // Block change start
 	s.match.Offset = (s.match.Start + s.blockSize) // Block change end
-	s.matches[block] = s.match
-	s.match = &Bytes{} // New reference for next block
+	s.matches[block] = s.match                     // Append block to match diffing list
+	s.match = &Bytes{}                             // New reference for next block
 
 }
 
 // Calculate "delta" and return match diffs
+// Return map "Bytes" matches, each Byte keep position and literal diff matches
 func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
+	// Populate checksum block position based on weak + strong signatures
 	s.fillChecksum(signatures)
+	// Reset weak module state
 	s.w.Reset()
 
 	// Keep tracking changes
@@ -146,13 +153,14 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 		// Get byte from reader
 		// eg. reader = [abcd], byte = a...
 		c, err := reader.ReadByte()
+		// If reader == end of file or error trying to get byte
 		if err == io.EOF || err != nil {
 			break
 		}
 
 		// Add new el to checksum
 		s.w.RollIn(c)
-                // Keep moving forward if not data ready to analize
+		// Keep moving forward if not data ready to analize
 		if s.w.Count() < s.blockSize {
 			continue
 		}
