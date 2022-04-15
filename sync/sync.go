@@ -117,7 +117,7 @@ func (s *Sync) fillChecksum(signatures []Table) map[uint32]map[string]int {
 	return checksums
 }
 
-// Check if any block get removed
+// Check if any block get removed and return the cleaned/amplified matches with missing blocks
 func (s *Sync) IntegrityCheck(signatures []Table, matches map[int]*Bytes) map[int]*Bytes {
 	for i := range signatures {
 		if _, ok := matches[i]; !ok {
