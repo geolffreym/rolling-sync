@@ -8,7 +8,8 @@ import (
 	"github.com/geolffreym/rolling-sync/sync"
 )
 
-// Write signature
+// Write signature based on signature table
+// Return error if file creation fail or encode signatures fail
 func WriteSignature(file string, signatures []sync.Table) error {
 
 	if len(signatures) == 0 {
@@ -23,11 +24,16 @@ func WriteSignature(file string, signatures []sync.Table) error {
 
 	defer f.Close()
 	enc := gob.NewEncoder(f)
-	enc.Encode(signatures)
+	err = enc.Encode(signatures)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// Read signature
+// Read signatures from file and decode it
+// Return error if file reading fail or decode signatures fail
 func ReadSignature(file string) ([]sync.Table, error) {
 	f, err := os.Open(file)
 	if err != nil {

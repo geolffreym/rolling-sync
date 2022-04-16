@@ -72,14 +72,14 @@ func (s *Sync) FillTable(reader *bufio.Reader) []Table {
 	return signatures
 }
 
-// Calc strong md5 checksum
+// Calc and return strong md5 checksum
 func (s *Sync) strong(block []byte) string {
 	strong := sha1.New()
 	strong.Write(block)
 	return hex.EncodeToString(strong.Sum(nil))
 }
 
-// Calc weak adler32 checksum
+// Calc and return weak adler32 checksum
 func (s *Sync) weak(block []byte) uint32 {
 	weak := adler32.New()
 	weak.Write(block)
@@ -99,8 +99,8 @@ func (s *Sync) seek(indexes map[uint32]map[string]int, weak uint32, block []byte
 	return 0, errors.New("Not index in hash table")
 }
 
-// Populate tables indexes to match block position
 // {weak strong} = 0, {weak, strong} = 1
+// Fill tables indexes to match block position and return indexes
 func (s *Sync) indexTable(signatures []Table) map[uint32]map[string]int {
 	indexes := make(map[uint32]map[string]int)
 	// Keep signatures in memory while get processed
@@ -128,7 +128,7 @@ func (s *Sync) IntegrityCheck(signatures []Table, matches map[int]*Bytes) map[in
 	return matches
 }
 
-// Calculate new block diffs
+// Return new calculated range position in block diffs
 func (s *Sync) calcBlock(index int, literalMatches []byte) *Bytes {
 	return &Bytes{
 		Start:  (index * s.blockSize),                 // Block change start
@@ -187,8 +187,8 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 
 	}
 
-	// Finally check the blocks integrity
 	// Missing blocks?
+	// Finally check the blocks integrity
 	// Return cleaned/amplified delta matches
 	matches = s.IntegrityCheck(signatures, matches)
 	return matches

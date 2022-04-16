@@ -22,6 +22,7 @@ func New() *Adler32 {
 		b:      0,
 	}
 }
+
 func (h *Adler32) Reset() {
 	h.a = 0
 	h.b = 0
