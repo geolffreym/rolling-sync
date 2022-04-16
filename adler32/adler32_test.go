@@ -5,9 +5,7 @@ import (
 )
 
 func TestWriteSum(t *testing.T) {
-	rolling := New()
-
-	rolling = rolling.Write([]byte("how are you doing"))
+	rolling := New().Write([]byte("how are you doing"))
 	w0 := rolling.Sum()
 
 	if 944178772 != w0 {
@@ -20,19 +18,17 @@ func TestWriteSum(t *testing.T) {
 }
 
 func TestWindowOverflow(t *testing.T) {
-	rolling := New()
-
-	rolling = rolling.Write([]byte("abcdef"))
-	rolling = rolling.RollOut() // remove a
-	rolling = rolling.RollOut() // remove b
-	rolling = rolling.RollOut() // remove c
-	rolling = rolling.RollOut() // remove d
-	rolling = rolling.RollOut() // remove e
-	rolling = rolling.RollOut() // remove f
-	rolling = rolling.RollOut() // overflow
+	rolling := New().Write([]byte("abcdef")).
+		RollOut(). // remove a
+		RollOut(). // remove b
+		RollOut(). // remove c
+		RollOut(). // remove d
+		RollOut(). // remove e
+		RollOut(). // remove f
+		RollOut()  // overflow
 
 	if rolling.Count() > 0 {
-		t.Errorf("Expected error 'Window size equal 0'")
+		t.Errorf("Expected count equal 0")
 	}
 }
 
@@ -56,7 +52,8 @@ func TestRollIn(t *testing.T) {
 		RollIn('o').
 		RollIn('i').
 		RollIn('n').
-		RollIn('g').Sum()
+		RollIn('g').
+		Sum()
 
 	if w0 != w1 {
 		t.Errorf("Expected same hash for same input after RolledIn bytes")
