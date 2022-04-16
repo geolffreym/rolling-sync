@@ -146,7 +146,7 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 	indexes := s.indexTable(signatures)
 	// Literal matches keep literal diff bytes stored
 	literalMatches := []byte{}
-	matches := make(map[int]*Bytes)
+	delta := make(map[int]*Bytes)
 
 	// Keep tracking changes
 	for {
@@ -180,7 +180,7 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 		index, notFound := s.seek(indexes, checksum, weak.Window)
 		if notFound == nil {
 			// Store block matches
-			matches[index] = s.calcBlock(index, literalMatches)
+			delta[index] = s.calcBlock(index, literalMatches)
 			literalMatches = nil
 			weak.Reset()
 		}
@@ -190,7 +190,7 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 	// Missing blocks?
 	// Finally check the blocks integrity
 	// Return cleaned/amplified delta matches
-	matches = s.IntegrityCheck(signatures, matches)
-	return matches
+	delta = s.IntegrityCheck(signatures, delta)
+	return delta
 
 }
