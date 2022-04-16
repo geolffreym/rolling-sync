@@ -90,7 +90,7 @@ func TestSeekMatchBlock(t *testing.T) {
 
 	// For each block slice from file
 	signatures := sync.FillTable(bufioA)
-	indexes := sync.indexTable(signatures)
+	indexes := sync.fillIndexTable(signatures)
 	weakSum := uint32(231277338)
 	index, err := sync.seek(indexes, weakSum, []byte("rld this"))
 
@@ -107,7 +107,7 @@ func TestIndexTable(t *testing.T) {
 
 	// For each block slice from file
 	signatures := sync.FillTable(bufioA)
-	indexes := sync.indexTable(signatures)
+	indexes := sync.fillIndexTable(signatures)
 
 	for i, check := range signatures {
 		weak := check.Weak

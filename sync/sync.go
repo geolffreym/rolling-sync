@@ -101,7 +101,7 @@ func (s *Sync) seek(indexes map[uint32]map[string]int, weak uint32, block []byte
 
 // {weak strong} = 0, {weak, strong} = 1
 // Fill tables indexes to match block position and return indexes
-func (s *Sync) indexTable(signatures []Table) map[uint32]map[string]int {
+func (s *Sync) fillIndexTable(signatures []Table) map[uint32]map[string]int {
 	indexes := make(map[uint32]map[string]int)
 	// Keep signatures in memory while get processed
 	for i, check := range signatures {
@@ -143,7 +143,7 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 	// Weak checksum adler32
 	weak := adler32.New()
 	// Populate indexes by block position based on weak + strong signatures
-	indexes := s.indexTable(signatures)
+	indexes := s.fillIndexTable(signatures)
 	// Literal matches keep literal diff bytes stored
 	literalMatches := []byte{}
 	delta := make(map[int]*Bytes)
