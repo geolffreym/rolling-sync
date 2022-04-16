@@ -99,8 +99,8 @@ func TestSeekMatchBlock(t *testing.T) {
 	}
 }
 
-func TestFillChecksum(t *testing.T) {
-	a := []byte("hello world this is a test for my checksum hash table")
+func TestIndexTable(t *testing.T) {
+	a := []byte("hello world this is a test for my index hash table")
 	bytesA := bytes.NewReader(a)
 	bufioA := bufio.NewReader(bytesA)
 	sync := New(1 << 3) // 8 bytes

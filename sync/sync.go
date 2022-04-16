@@ -88,6 +88,7 @@ func (s *Sync) weak(block []byte) uint32 {
 
 // Seek block in indexes and return block number or error if not found
 func (s *Sync) seek(indexes map[uint32]map[string]int, weak uint32, block []byte) (int, error) {
+	// Check if weaksum exists in indexes table
 	if subfield, found := indexes[weak]; found {
 		st := s.strong(block)
 		if _, ok := subfield[st]; ok {
@@ -125,6 +126,15 @@ func (s *Sync) IntegrityCheck(signatures []Table, matches map[int]*Bytes) map[in
 	}
 
 	return matches
+}
+
+// Calculate new block diffs
+func (s *Sync) calcBlock(index int, literalMatches []byte) *Bytes {
+	return &Bytes{
+		Start:  (index * s.blockSize),                 // Block change start
+		Offset: ((index * s.blockSize) + s.blockSize), // Block change endwhereas it could be copied-on-write to a new data structureAppend block to match diffing list
+		Lit:    literalMatches,
+	}
 }
 
 // Calculate "delta" and return match diffs
@@ -170,13 +180,7 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 		index, notFound := s.seek(indexes, checksum, weak.Window)
 		if notFound == nil {
 			// Store block matches
-			matches[index] = &Bytes{
-				Start:  (index * s.blockSize),                 // Block change start
-				Offset: ((index * s.blockSize) + s.blockSize), // Block change endwhereas it could be copied-on-write to a new data structureAppend block to match diffing list
-				Lit:    literalMatches,
-			}
-
-			// Reset state
+			matches[index] = s.calcBlock(index, literalMatches)
 			literalMatches = nil
 			weak.Reset()
 		}
