@@ -7,7 +7,7 @@ package adler32
 const M = 65521
 
 type Adler32 struct {
-	Window []byte
+	window []byte
 	count  int // Last position
 	old    uint8
 	a, b   uint16 // adler32 formula
@@ -15,7 +15,7 @@ type Adler32 struct {
 
 func New() Adler32 {
 	return Adler32{
-		Window: []byte{},
+		window: []byte{},
 		count:  0,
 		a:      0,
 		b:      0,
@@ -46,14 +46,16 @@ func (h Adler32) Sum() uint32 {
 	return uint32(h.b)<<16 | uint32(h.a)&0xFFFFF
 }
 
-func (h Adler32) Count() int { return h.count }
+func (h Adler32) Window() []byte { return h.window }
+func (h Adler32) Count() int     { return h.count }
+func (h Adler32) Removed() uint8 { return h.old }
 
 // Add byte to rolling checksum
 func (h Adler32) RollIn(input byte) Adler32 {
 	h.a = (h.a + uint16(input)) % M
 	h.b = (h.b + h.a) % M
 	// Keep stored windows bytes while get processed
-	h.Window = append(h.Window, input)
+	h.window = append(h.window, input)
 	h.count++
 	return h
 }
@@ -61,15 +63,15 @@ func (h Adler32) RollIn(input byte) Adler32 {
 // Substract byte from checksum
 func (h Adler32) RollOut() Adler32 {
 
-	if len(h.Window) == 0 {
+	if len(h.window) == 0 {
 		h.count = 0
 		return h
 	}
 
-	h.old = h.Window[0]
+	h.old = h.window[0]
 	h.a = (h.a - uint16(h.old)) % M
-	h.b = (h.b - (uint16(len(h.Window)) * uint16(h.old))) % M
-	h.Window = h.Window[1:]
+	h.b = (h.b - (uint16(len(h.window)) * uint16(h.old))) % M
+	h.window = h.window[1:]
 	h.count--
 
 	return h
