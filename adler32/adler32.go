@@ -13,6 +13,7 @@ type Adler32 struct {
 	a, b   uint16 // adler32 formula
 }
 
+// Factory function
 func New() Adler32 {
 	return Adler32{
 		window: []byte{},

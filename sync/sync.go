@@ -39,6 +39,7 @@ type Sync struct {
 	blockSize int
 }
 
+// Factory function
 func New(size int) Sync {
 	return Sync{
 		blockSize: size,
