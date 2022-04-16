@@ -142,6 +142,7 @@ func (s Sync) calcBlock(index int, literalMatches []byte) Bytes {
 func (s Sync) Delta(sig []Table, reader *bufio.Reader) (delta map[int]Bytes) {
 	// Weak checksum adler32
 	weak := adler32.New()
+	// Indexes for block position
 	indexes := s.BuildIndexes(sig)
 	// Literal matches keep literal diff bytes stored
 	literalMatches := []byte{}
