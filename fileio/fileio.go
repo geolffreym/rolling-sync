@@ -11,6 +11,7 @@ type IO struct {
 	blockSize int
 }
 
+// Factory function
 func New(blockSize int) *IO {
 	return &IO{
 		blockSize: blockSize,
