@@ -8,7 +8,6 @@ import (
 	"bufio"
 	"crypto/sha1"
 	"encoding/hex"
-	"errors"
 	"io"
 
 	"github.com/geolffreym/rolling-sync/adler32"
@@ -37,18 +36,32 @@ type Sync struct {
 	blockSize int
 }
 
-func New(size int) *Sync {
-	return &Sync{
+func New(size int) Sync {
+	return Sync{
 		blockSize: size,
 	}
 }
 
+// Calc and return strong md5 checksum
+func strong(block []byte) string {
+	strong := sha1.New()
+	strong.Write(block)
+	return hex.EncodeToString(strong.Sum(nil))
+}
+
+// Calc and return weak adler32 checksum
+func weak(block []byte) uint32 {
+	weak := adler32.New()
+	weak.Write(block)
+	return weak.Sum()
+}
+
 // Fill signature from blocks
 // Weak + Strong hash table to avoid collisions + perf
-func (s *Sync) FillTable(reader *bufio.Reader) []Table {
+func (s Sync) FillTable(reader *bufio.Reader) (signatures []Table) {
 	//Read chunks from file
 	block := make([]byte, s.blockSize)
-	signatures := []Table{}
+	signatures = []Table{}
 
 	for {
 		// Add chunks to buffer
@@ -60,49 +73,34 @@ func (s *Sync) FillTable(reader *bufio.Reader) []Table {
 
 		// Weak and strong checksum
 		// https://rsync.samba.org/tech_report/node3.
-		weak := s.weak(block)
-		strong := s.strong(block)
+		weak := weak(block)
+		strong := strong(block)
 		// Keep signatures while get written
-		signatures = append(
-			signatures,
-			Table{Weak: weak, Strong: strong},
-		)
+		table := Table{Weak: weak, Strong: strong}
+		signatures = append(signatures, table)
 	}
 
-	return signatures
+	return
 }
 
-// Calc and return strong md5 checksum
-func (s *Sync) strong(block []byte) string {
-	strong := sha1.New()
-	strong.Write(block)
-	return hex.EncodeToString(strong.Sum(nil))
-}
-
-// Calc and return weak adler32 checksum
-func (s *Sync) weak(block []byte) uint32 {
-	weak := adler32.New()
-	weak.Write(block)
-	return weak.Sum()
-}
-
+// Based on weak + string map searching for block position
 // Seek block in indexes and return block number or error if not found
-func (s *Sync) seek(indexes map[uint32]map[string]int, weak uint32, block []byte) (int, error) {
+func (s Sync) Seek(indexes map[uint32]map[string]int, wk uint32, b []byte) int {
 	// Check if weaksum exists in indexes table
-	if subfield, found := indexes[weak]; found {
-		st := s.strong(block)
+	if subfield, found := indexes[wk]; found {
+		st := strong(b) // Calc strong hash until weak found
 		if _, ok := subfield[st]; ok {
-			return subfield[st], nil
+			return subfield[st]
 		}
 	}
 
-	return 0, errors.New("Not index in hash table")
+	return -1
 }
 
 // {weak strong} = 0, {weak, strong} = 1
 // Fill tables indexes to match block position and return indexes
-func (s *Sync) fillIndexTable(signatures []Table) map[uint32]map[string]int {
-	indexes := make(map[uint32]map[string]int)
+func (s Sync) fillIndexTable(signatures []Table) (indexes map[uint32]map[string]int) {
+	indexes = make(map[uint32]map[string]int)
 	// Keep signatures in memory while get processed
 	for i, check := range signatures {
 		d := make(map[string]int)
@@ -110,14 +108,15 @@ func (s *Sync) fillIndexTable(signatures []Table) map[uint32]map[string]int {
 		d[check.Strong] = i
 	}
 
-	return indexes
+	return
 }
 
+// Return copy of matches with missing blocks
 // Check if any block get removed and return the cleaned/amplified matches with missing blocks
-func (s *Sync) IntegrityCheck(signatures []Table, matches map[int]*Bytes) map[int]*Bytes {
+func (s Sync) IntegrityCheck(signatures []Table, matches map[int]Bytes) map[int]Bytes {
 	for i := range signatures {
 		if _, ok := matches[i]; !ok {
-			matches[i] = &Bytes{
+			matches[i] = Bytes{
 				Missing: true,                            // Block not found
 				Start:   i * s.blockSize,                 // Start range of block to copy
 				Offset:  (i * s.blockSize) + s.blockSize, // End block to copy
@@ -129,8 +128,8 @@ func (s *Sync) IntegrityCheck(signatures []Table, matches map[int]*Bytes) map[in
 }
 
 // Return new calculated range position in block diffs
-func (s *Sync) calcBlock(index int, literalMatches []byte) *Bytes {
-	return &Bytes{
+func (s Sync) calcBlock(index int, literalMatches []byte) Bytes {
+	return Bytes{
 		Start:  (index * s.blockSize),                 // Block change start
 		Offset: ((index * s.blockSize) + s.blockSize), // Block change endwhereas it could be copied-on-write to a new data structureAppend block to match diffing list
 		Lit:    literalMatches,
@@ -139,14 +138,14 @@ func (s *Sync) calcBlock(index int, literalMatches []byte) *Bytes {
 
 // Calculate "delta" and return match diffs
 // Return map "Bytes" matches, each Byte keep position and literal diff matches
-func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
+func (s Sync) Delta(signatures []Table, reader *bufio.Reader) (delta map[int]Bytes) {
 	// Weak checksum adler32
 	weak := adler32.New()
 	// Populate indexes by block position based on weak + strong signatures
 	indexes := s.fillIndexTable(signatures)
 	// Literal matches keep literal diff bytes stored
 	literalMatches := []byte{}
-	delta := make(map[int]*Bytes)
+	delta = make(map[int]Bytes)
 
 	// Keep tracking changes
 	for {
@@ -177,10 +176,11 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 
 		checksum := weak.Sum() // Calc checksum based on rolling hash
 		// Check if weak and strong match in checksums position based signatures
-		index, notFound := s.seek(indexes, checksum, weak.Window)
-		if notFound == nil {
+		index := s.Seek(indexes, checksum, weak.Window)
+		if ^index != 0 { // match found
 			// Store block matches
-			delta[index] = s.calcBlock(index, literalMatches)
+			newBlock := s.calcBlock(index, literalMatches)
+			delta[index] = newBlock
 			literalMatches = nil
 			weak.Reset()
 		}
@@ -189,8 +189,7 @@ func (s *Sync) Delta(signatures []Table, reader *bufio.Reader) map[int]*Bytes {
 
 	// Missing blocks?
 	// Finally check the blocks integrity
-	// Return cleaned/amplified delta matches
-	delta = s.IntegrityCheck(signatures, delta)
-	return delta
+	// Return cleaned/amplified copy for delta matches
+	return s.IntegrityCheck(signatures, delta)
 
 }

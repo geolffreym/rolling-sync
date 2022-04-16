@@ -7,7 +7,7 @@ import (
 func TestWriteSum(t *testing.T) {
 	rolling := New()
 
-	rolling.Write([]byte("how are you doing"))
+	rolling = rolling.Write([]byte("how are you doing"))
 	w0 := rolling.Sum()
 
 	if 944178772 != w0 {
@@ -22,16 +22,16 @@ func TestWriteSum(t *testing.T) {
 func TestWindowOverflow(t *testing.T) {
 	rolling := New()
 
-	rolling.Write([]byte("abcdef"))
-	rolling.RollOut()           // remove a
-	rolling.RollOut()           // remove b
-	rolling.RollOut()           // remove c
-	rolling.RollOut()           // remove d
-	rolling.RollOut()           // remove e
-	rolling.RollOut()           // remove f
-	_, err := rolling.RollOut() // overflow
+	rolling = rolling.Write([]byte("abcdef"))
+	rolling = rolling.RollOut() // remove a
+	rolling = rolling.RollOut() // remove b
+	rolling = rolling.RollOut() // remove c
+	rolling = rolling.RollOut() // remove d
+	rolling = rolling.RollOut() // remove e
+	rolling = rolling.RollOut() // remove f
+	rolling = rolling.RollOut() // overflow
 
-	if err == nil {
+	if rolling.Count() > 0 {
 		t.Errorf("Expected error 'Window size equal 0'")
 	}
 }
@@ -39,27 +39,24 @@ func TestWindowOverflow(t *testing.T) {
 func TestRollIn(t *testing.T) {
 	rolling := New()
 
-	rolling.Write([]byte("ow are you doing"))
-	w0 := rolling.Sum()
+	w0 := rolling.Write([]byte("ow are you doing")).Sum()
 
-	rolling.Reset()
-
-	rolling.RollIn('o')
-	rolling.RollIn('w')
-	rolling.RollIn(' ')
-	rolling.RollIn('a')
-	rolling.RollIn('r')
-	rolling.RollIn('e')
-	rolling.RollIn(' ')
-	rolling.RollIn('y')
-	rolling.RollIn('o')
-	rolling.RollIn('u')
-	rolling.RollIn(' ')
-	rolling.RollIn('d')
-	rolling.RollIn('o')
-	rolling.RollIn('i')
-	rolling.RollIn('n')
-	rolling.RollIn('g')
+	rolling = rolling.RollIn('o')
+	rolling = rolling.RollIn('w')
+	rolling = rolling.RollIn(' ')
+	rolling = rolling.RollIn('a')
+	rolling = rolling.RollIn('r')
+	rolling = rolling.RollIn('e')
+	rolling = rolling.RollIn(' ')
+	rolling = rolling.RollIn('y')
+	rolling = rolling.RollIn('o')
+	rolling = rolling.RollIn('u')
+	rolling = rolling.RollIn(' ')
+	rolling = rolling.RollIn('d')
+	rolling = rolling.RollIn('o')
+	rolling = rolling.RollIn('i')
+	rolling = rolling.RollIn('n')
+	rolling = rolling.RollIn('g')
 	w1 := rolling.Sum()
 
 	if w0 != w1 {
@@ -71,30 +68,27 @@ func TestRollIn(t *testing.T) {
 func TestRollOut(t *testing.T) {
 	rolling := New()
 
-	rolling.Write([]byte("w are you doing"))
-	w0 := rolling.Sum()
+	w0 := rolling.Write([]byte("w are you doing")).Sum()
 
-	rolling.Reset()
-
-	rolling.RollIn('h')
-	rolling.RollIn('o')
-	rolling.RollIn('w')
-	rolling.RollIn(' ')
-	rolling.RollIn('a')
-	rolling.RollIn('r')
-	rolling.RollIn('e')
-	rolling.RollIn(' ')
-	rolling.RollIn('y')
-	rolling.RollIn('o')
-	rolling.RollIn('u')
-	rolling.RollIn(' ')
-	rolling.RollIn('d')
-	rolling.RollIn('o')
-	rolling.RollIn('i')
-	rolling.RollIn('n')
-	rolling.RollIn('g')
-	rolling.RollOut() // remove h
-	rolling.RollOut() // remove o
+	rolling = rolling.RollIn('h')
+	rolling = rolling.RollIn('o')
+	rolling = rolling.RollIn('w')
+	rolling = rolling.RollIn(' ')
+	rolling = rolling.RollIn('a')
+	rolling = rolling.RollIn('r')
+	rolling = rolling.RollIn('e')
+	rolling = rolling.RollIn(' ')
+	rolling = rolling.RollIn('y')
+	rolling = rolling.RollIn('o')
+	rolling = rolling.RollIn('u')
+	rolling = rolling.RollIn(' ')
+	rolling = rolling.RollIn('d')
+	rolling = rolling.RollIn('o')
+	rolling = rolling.RollIn('i')
+	rolling = rolling.RollIn('n')
+	rolling = rolling.RollIn('g')
+	rolling = rolling.RollOut() // remove h
+	rolling = rolling.RollOut() // remove o
 	w1 := rolling.Sum()
 
 	if w0 != w1 {
