@@ -19,17 +19,16 @@ func TestIntegration(t *testing.T) {
 	}
 
 	// Fill signature in memory
-	sync = sync.FillTable(v1).FillIndexes()
-	signatures := sync.Signatures()
+	sig := sync.BuildSigTable(v1)
 	// Write signatures
 	// Simulation step for signatures write and read
 	// Simulate split operation for signatures
-	IO.WriteSignature("signature.bin", signatures)
+	IO.WriteSignature("signature.bin", sig)
 
 	// Sometime later :)
 	// Expected receive same signature from original written file
 	signaturesFromFile, _ := IO.ReadSignature("signature.bin")
-	if !reflect.DeepEqual(signatures, signaturesFromFile) {
+	if !reflect.DeepEqual(sig, signaturesFromFile) {
 		t.Errorf("Expected written signatures equal to out signatures")
 	}
 

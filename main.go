@@ -48,8 +48,8 @@ func main() {
 	}
 
 	for i := 0; i <= 100000; i++ {
-		sync := sync.FillTable(v1).FillIndexes()
-		sync.Delta(sync.Signatures(), v2)
+		sig := sync.BuildSigTable(v1)
+		sync.Delta(sig, v2)
 	}
 
 	f, err := os.Create("mem.proof")
