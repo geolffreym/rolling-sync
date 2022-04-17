@@ -29,7 +29,7 @@ Bytes store block differences
 type Bytes struct {
 	Offset  int    // End of diff position in block
 	Start   int    // Start of diff position in block
-	Missing bool   // Block not found
+	Missing bool   // true if Block not found
 	Lit     []byte // Literal bytes to replace in delta
 }
 
