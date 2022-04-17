@@ -158,7 +158,7 @@ func (s Sync) Delta(sig []Table, reader *bufio.Reader) map[int]Bytes {
 		// Get byte from reader
 		// eg. reader = [abcd], byte = a...
 		c, err := reader.ReadByte()
-		// If reader == EOF end of file or error trying to get byte
+		// If reach end of file or error trying to get byte
 		if err == io.EOF || err != nil {
 			break
 		}
