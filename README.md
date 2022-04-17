@@ -28,6 +28,12 @@ A library that does a similar thing is [rdiff](https://linux.die.net/man/1/rdiff
 
 ## Usage
 
-Run Tests:  `go test`
+Run Tests:  `make test`
 
-Build: `go build`
+Build: `make build`
+
+Test Coverage: `make check-test-coverage`
+
+Code Analysis: `make check`
+
+Compile: `make compile`
