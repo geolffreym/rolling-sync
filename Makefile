@@ -9,6 +9,9 @@ check-test-coverage:
 build:
 	go build -v ./...
 
+code-check:
+	go vet -v ./...
+
 compile: 
 	echo "Compiling for every OS and Platform"
 	GOOS=freebsd GOARCH=386 go build -o bin/main-freebsd-386 main.go
