@@ -18,10 +18,12 @@ const S = 16
 // Alias for nested map
 type Indexes map[uint32]map[string]int
 
-// Bytes store block differences
-// Missing = false && len(Lit) > 0 (block exist and some changes made to block)
-// Missing == false && Lit == nil (block intact just copy it)
-// Missing = true (block missing)
+/*
+Bytes store block differences
+ Missing = true (block missing)
+ Missing = false && len(Lit) > 0 (block exist and some changes made to block)
+ Missing == false && Lit == nil (block intact just copy it)
+*/
 type Bytes struct {
 	Offset  int    // End of diff position in block
 	Start   int    // Start of diff position in block
@@ -59,8 +61,9 @@ func weak(block []byte) uint32 {
 	return weak.Write(block).Sum()
 }
 
-// Fill signature from blocks
-// Weak + Strong hash table to avoid collisions + perf
+// Fill signature from blocks using
+// Weak + Strong hash table to avoid collisions.
+// Hash table improve performance for mapping search using strong calc only if weak is found
 func (s Sync) BuildSigTable(reader *bufio.Reader) []Table {
 	//Read chunks from file
 	block := make([]byte, s.blockSize)
@@ -87,7 +90,7 @@ func (s Sync) BuildSigTable(reader *bufio.Reader) []Table {
 }
 
 // Based on weak + string map searching for block position
-// Seek block in indexes and return block number or error if not found
+// in indexes and return block number or error if not found
 func (s Sync) Seek(idx Indexes, wk uint32, b []byte) int {
 	// Check if weaksum exists in indexes table
 	if subfield, found := idx[wk]; found {
@@ -100,8 +103,8 @@ func (s Sync) Seek(idx Indexes, wk uint32, b []byte) int {
 	return -1
 }
 
+// Fill tables indexes to match block position and return indexes:
 // {weak strong} = 0, {weak, strong} = 1
-// Fill tables indexes to match block position and return indexes
 func (s Sync) BuildIndexes(signatures []Table) Indexes {
 	indexes := make(Indexes) // Build Indexes
 	// Keep signatures in memory while get processed
@@ -112,8 +115,7 @@ func (s Sync) BuildIndexes(signatures []Table) Indexes {
 	return indexes
 }
 
-// Return copy of matches with missing blocks
-// Check if any block get removed and return the cleaned/amplified matches with missing blocks
+// Check if any block get removed and return the cleaned/amplified matches copy with missing blocks
 func (s Sync) IntegrityCheck(sig []Table, matches map[int]Bytes) map[int]Bytes {
 	for i := range sig {
 		if _, ok := matches[i]; !ok {
@@ -137,8 +139,9 @@ func (s Sync) genBlock(index int, literalMatches []byte) Bytes {
 	}
 }
 
-// Calculate "delta" and return match diffs
-// Return map "Bytes" matches, each Byte keep position and literal diff matches
+// Calculate "delta" and return match diffs.
+// Return map "Bytes" matches, each Byte keep position and literal
+// diff matches for block and the map key keep the block position.
 func (s Sync) Delta(sig []Table, reader *bufio.Reader) (delta map[int]Bytes) {
 	// Weak checksum adler32
 	weak := adler32.New()
