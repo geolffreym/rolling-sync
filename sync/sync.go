@@ -9,6 +9,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"io"
+	"reflect"
 
 	"github.com/geolffreym/rolling-sync/adler32"
 )
@@ -20,9 +21,11 @@ type Indexes map[uint32]map[string]int
 
 /*
 Bytes store block differences
- Missing = true (block missing)
+ Missing = true && len(Lit) == 0 (block missing)
  Missing = false && len(Lit) > 0 (block exist and some changes made to block)
  Missing == false && Lit == nil (block intact just copy it)
+ Literal matches = any textual/literal value match found eg. "abcdef"
+ No literal matches = any match found by position range in block to copy eg. Block missing && Start > 0 && Offset > 0
 */
 type Bytes struct {
 	Offset  int    // End of diff position in block
@@ -59,6 +62,13 @@ func strong(block []byte) string {
 func weak(block []byte) uint32 {
 	weak := adler32.New()
 	return weak.Write(block).Sum()
+}
+
+// Clear garbage collectable struct
+func clear(v interface{}) {
+	// https://stackoverflow.com/questions/29168905/how-to-clear-values-of-a-instance-of-a-type-struct-dynamically/51006888#51006888
+	p := reflect.ValueOf(v).Elem()
+	p.Set(reflect.Zero(p.Type()))
 }
 
 // Fill signature from blocks using
@@ -134,22 +144,22 @@ func (s Sync) IntegrityCheck(sig []Table, matches map[int]Bytes) map[int]Bytes {
 func (s Sync) genBlock(index int, literalMatches []byte) Bytes {
 	return Bytes{
 		Start:  (index * s.blockSize),                 // Block change start
-		Offset: ((index * s.blockSize) + s.blockSize), // Block change endwhereas it could be copied-on-write to a new data structureAppend block to match diffing list
-		Lit:    literalMatches,
+		Offset: ((index * s.blockSize) + s.blockSize), // Block change endwhereas it could be copied-on-write to a new data structure
+		Lit:    literalMatches,                        // Store literal matches
 	}
 }
 
 // Calculate "delta" and return match diffs.
 // Return map "Bytes" matches, each Byte keep position and literal
 // diff matches for block and the map key keep the block position.
-func (s Sync) Delta(sig []Table, reader *bufio.Reader) (delta map[int]Bytes) {
+func (s Sync) Delta(sig []Table, reader *bufio.Reader) map[int]Bytes {
 	// Weak checksum adler32
 	weak := adler32.New()
-	// Indexes for block position
+	// Indexes for block positionAppend block to match diffing list
 	indexes := s.BuildIndexes(sig)
 	// Literal matches keep literal diff bytes stored
-	literalMatches := []byte{}
-	delta = make(map[int]Bytes)
+	tmpLitMatches := []byte{}
+	delta := make(map[int]Bytes)
 
 	// Keep tracking changes
 	for {
@@ -176,19 +186,20 @@ func (s Sync) Delta(sig []Table, reader *bufio.Reader) (delta map[int]Bytes) {
 			weak = weak.RollOut()
 			removed := weak.Removed()
 			// Store literal matches
-			literalMatches = append(literalMatches, removed)
+			tmpLitMatches = append(tmpLitMatches, removed)
 		}
 
 		// Calc checksum based on rolling hash
 		// Check if weak and strong match in checksums position based signatures
 		index := s.Seek(indexes, weak.Sum(), weak.Window())
 		if ^index != 0 { // match found
-			// New object
-			weak = adler32.New()
 			// Generate new block with calculated range positions for diffing
-			newBlock := s.genBlock(index, literalMatches)
+			newBlock := s.genBlock(index, tmpLitMatches)
 			delta[index] = newBlock // Add new block to delta matches
-			literalMatches = nil
+
+			// Clear garbage collectable
+			clear(&tmpLitMatches) // Clear tmp literal matches
+			clear(&weak)          // Clear weak adler object
 		}
 
 	}
@@ -196,6 +207,7 @@ func (s Sync) Delta(sig []Table, reader *bufio.Reader) (delta map[int]Bytes) {
 	// Missing blocks?
 	// Finally check the blocks integrity
 	// Return cleaned/amplified copy for delta matches
-	return s.IntegrityCheck(sig, delta)
+	delta = s.IntegrityCheck(sig, delta)
+	return delta
 
 }
