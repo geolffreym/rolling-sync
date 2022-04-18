@@ -11,6 +11,7 @@ import (
 	"io"
 
 	"github.com/geolffreym/rolling-sync/adler32"
+	"github.com/geolffreym/rolling-sync/utils"
 )
 
 const S = 16
@@ -190,8 +191,8 @@ func (s Sync) Delta(sig []Table, reader *bufio.Reader) map[int]Bytes {
 			delta[index] = newBlock // Add new block to delta matches
 
 			// Clear garbage collectable
-			clear(&tmpLitMatches) // Clear tmp literal matches
-			clear(&weak)          // Clear weak adler object
+			utils.Clear(&tmpLitMatches) // Clear tmp literal matches
+			utils.Clear(&weak)          // Clear weak adler object
 		}
 
 	}

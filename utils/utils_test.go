@@ -1,4 +1,4 @@
-package sync
+package utils
 
 import (
 	"reflect"
@@ -21,9 +21,9 @@ func TestUtilClear(t *testing.T) {
 		c: a,
 	}
 
-	clear(&a)
-	clear(&b)
-	clear(&c)
+	Clear(&a)
+	Clear(&b)
+	Clear(&c)
 
 	if len(a) > 0 || len(b) > 0 {
 		t.Errorf("Expected empty slices after clearing")
