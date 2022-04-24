@@ -134,7 +134,7 @@ func (s Sync) IntegrityCheck(sig []Table, matches map[int]Bytes) map[int]Bytes {
 }
 
 // Return new calculated range position in block diffs
-func (s Sync) genBlock(index int, literalMatches []byte) Bytes {
+func (s Sync) block(index int, literalMatches []byte) Bytes {
 	return Bytes{
 		Start:  (index * s.blockSize),                 // Block change start
 		Offset: ((index * s.blockSize) + s.blockSize), // Block change endwhereas it could be copied-on-write to a new data structure
@@ -187,7 +187,7 @@ func (s Sync) Delta(sig []Table, reader *bufio.Reader) map[int]Bytes {
 		index := s.Seek(indexes, weak.Sum(), weak.Window())
 		if ^index != 0 { // match found
 			// Generate new block with calculated range positions for diffing
-			newBlock := s.genBlock(index, tmpLitMatches)
+			newBlock := s.block(index, tmpLitMatches)
 			delta[index] = newBlock // Add new block to delta matches
 
 			// Clear garbage collectable
