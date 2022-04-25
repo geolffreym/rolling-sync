@@ -33,8 +33,5 @@ jobs:
     - name: Coverage
       run: make coverage
 
-    - name: Coverage
-      run: make coverage
-
     - name: Compile
       run: make compile
