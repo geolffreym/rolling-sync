@@ -27,7 +27,9 @@ benchmark:
 	go test ./... -bench=. -benchtime 100000x -count 5
 
 # View profiling
-# go tool pprof -top cpu.prof 
+# Could use Graphviz (https://graphviz.org/download/)
+# eg. go tool pprof -web bin/main-linux-amd64 cpu.prof
+# or just standard output: go tool pprof -top cpu.prof 
 
 # For memory profiling type use:
 # inuse_space	Display in-use memory size
