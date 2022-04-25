@@ -13,7 +13,7 @@ import (
 func WriteSignature(file string, signatures []sync.Table) error {
 
 	if len(signatures) == 0 {
-		return errors.New("No signatures to write")
+		return errors.New("no signatures to write")
 	}
 
 	//  Performed writing operations

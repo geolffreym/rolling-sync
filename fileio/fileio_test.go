@@ -11,7 +11,7 @@ func TestInvalidChunkSize(t *testing.T) {
 	_, err := IO.Open("../mock.txt")
 
 	if err == nil {
-		t.Fatalf("Expected error for 'At least 2 chunks are required'")
+		t.Fatalf("Expected error for 'at least 2 chunks are required'")
 	}
 
 }

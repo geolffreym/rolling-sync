@@ -33,7 +33,7 @@ func (o IO) Open(input string) (*bufio.Reader, error) {
 	fileChunks := o.Chunks(fileSize)
 	// Check if at least two chunks are generated based on file size and block size
 	if fileChunks <= 1 {
-		return nil, errors.New("At least 2 chunks are required")
+		return nil, errors.New("at least 2 chunks are required")
 	}
 
 	return bufio.NewReader(file), nil
