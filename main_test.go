@@ -48,6 +48,7 @@ func TestIntegration(t *testing.T) {
 }
 
 func BenchmarkDelta(b *testing.B) {
+	b.StopTimer()       // We are not analyzing io/declarations/etc
 	blockSize := 1 << 4 // 16 bytes
 	io := IO.New(blockSize)
 	sync := Sync.New(blockSize)
@@ -63,6 +64,7 @@ func BenchmarkDelta(b *testing.B) {
 		panic("Fail opening mockV2.txt")
 	}
 
+	b.StartTimer() // Start timer here to evaluate delta
 	for i := 0; i <= b.N; i++ {
 		sig := sync.BuildSigTable(v1)
 		sync.Delta(sig, v2)
