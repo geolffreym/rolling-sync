@@ -26,10 +26,8 @@ test:
 benchmark: 
 	go test ./... -bench=. -benchtime 100000x -count 5
 
-# View profiling
-# Could use Graphviz (https://graphviz.org/download/)
-# eg. go tool pprof -web bin/main-linux-amd64 cpu.prof
-# or just standard output: go tool pprof -top cpu.prof 
+# View standard output profiling:
+# go tool pprof -top cpu.prof 
 
 # For memory profiling type use:
 # inuse_space	Display in-use memory size
@@ -37,6 +35,10 @@ benchmark:
 # alloc_space	Display allocated memory size
 # alloc_objects	Display allocated object counts
 # eg. go tool pprof --alloc_space -top prof.mem 
+
+# For fancy visualization:
+# Could use Graphviz (https://graphviz.org/download/)
+# eg. go tool pprof -web bin/main-linux-amd64 cpu.prof
 
 profiling: 
 	go test -bench=. -benchtime 100000x -run=^$ -cpuprofile=cpu.prof
