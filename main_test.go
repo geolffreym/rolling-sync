@@ -46,3 +46,26 @@ func TestIntegration(t *testing.T) {
 	}
 
 }
+
+func BenchmarkDelta(b *testing.B) {
+	blockSize := 1 << 4 // 16 bytes
+	io := IO.New(blockSize)
+	sync := Sync.New(blockSize)
+
+	// Memory performance improvement using bufio.Reader
+	v1, err := io.Open("mock.txt")
+	if err != nil {
+		panic("Fail opening mock.txt")
+	}
+
+	v2, err := io.Open("mockV2.txt")
+	if err != nil {
+		panic("Fail opening mockV2.txt")
+	}
+
+	for i := 0; i <= b.N; i++ {
+		sig := sync.BuildSigTable(v1)
+		sync.Delta(sig, v2)
+	}
+
+}

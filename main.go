@@ -11,32 +11,17 @@ https://xilinx.github.io/Vitis_Libraries/security/2020.2/guide_L1/internals/adle
 package main
 
 import (
-	"log"
-	"os"
-	"runtime"
-	"runtime/pprof"
-
 	IO "github.com/geolffreym/rolling-sync/fileio"
 	Sync "github.com/geolffreym/rolling-sync/sync"
 )
 
 func main() {
 
-	// Performance test
-	cpufile, err := os.Create("cpu.proof")
-	err = pprof.StartCPUProfile(cpufile)
-	if err != nil {
-		panic(err)
-	}
-
-	defer cpufile.Close()
-	defer pprof.StopCPUProfile()
-
+	// Example usage
 	blockSize := 1 << 4 // 16 bytes
 	io := IO.New(blockSize)
 	sync := Sync.New(blockSize)
 
-	// Memory performance improvement using bufio.Reader
 	v1, err := io.Open("mock.txt")
 	if err != nil {
 		panic("Fail opening mock.txt")
@@ -47,19 +32,7 @@ func main() {
 		panic("Fail opening mockV2.txt")
 	}
 
-	for i := 0; i <= 100000; i++ {
-		sig := sync.BuildSigTable(v1)
-		sync.Delta(sig, v2)
-	}
-
-	f, err := os.Create("mem.proof")
-	if err != nil {
-		log.Fatal("could not create memory profile: ", err)
-	}
-	defer f.Close() // error handling omitted for example
-	runtime.GC()    // get up-to-date statistics
-	if err := pprof.WriteHeapProfile(f); err != nil {
-		log.Fatal("could not write memory profile: ", err)
-	}
+	sig := sync.BuildSigTable(v1) // Signature file for "source"
+	sync.Delta(sig, v2)           // Return delta with for "sig" and "target" differences
 
 }

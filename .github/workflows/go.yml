@@ -27,8 +27,14 @@ jobs:
     - name: Check
       run: make code-check
 
+    - name: Benchmark
+      run: make benchmark
+      
     - name: Coverage
-      run: make check-test-coverage
+      run: make coverage
+
+    - name: Coverage
+      run: make coverage
 
     - name: Compile
       run: make compile

@@ -1,4 +1,5 @@
 [![Go](https://github.com/geolffreym/rolling-sync/actions/workflows/go.yml/badge.svg)](https://github.com/geolffreym/rolling-sync/actions/workflows/go.yml)
+
 # Rolling Hash Algorithm
 
 _Spec v5 (2022-04-04)_
@@ -32,7 +33,9 @@ Run Tests:  `make test`
 
 Build: `make build`
 
-Test Coverage: `make check-test-coverage`
+Test Coverage: `make coverage`
+
+Benchmark: `make benchmark`
 
 Code Analysis: `make check`
 
