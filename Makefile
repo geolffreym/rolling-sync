@@ -41,8 +41,7 @@ benchmark:
 # eg. go tool pprof -web bin/main-linux-amd64 cpu.prof
 
 profiling: 
-	go test -bench=. -benchtime 100000x -run=^$ -cpuprofile=cpu.prof
-	go test -bench=. -benchtime 100000x -run=^$ -memprofile=prof.mem
+	go test -bench=. -benchtime 100000x -run=^$ -cpuprofile=cpu.prof -memprofile=prof.mem
 
 coverage:
 	go test -coverprofile coverage ./...

@@ -42,11 +42,3 @@ Code Analysis: `make check`
 Compile: `make compile`
 
 
-## Profiling
-
-Based on `go test -bench=. -benchtime 10000x -run=^$`
-https://github.com/google/pprof/blob/master/doc/README.md
-
-<img src="./profile001.png" width="100%" height="100%"/>
-<img src="./profile002.png" width="100%" height="100%"/>
-
