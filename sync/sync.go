@@ -45,8 +45,8 @@ type Sync struct {
 }
 
 // Factory function
-func New(size int) Sync {
-	return Sync{
+func New(size int) *Sync {
+	return &Sync{
 		blockSize: size,
 	}
 }
@@ -67,7 +67,7 @@ func weak(block []byte) uint32 {
 // Fill signature from blocks using
 // Weak + Strong hash table to avoid collisions.
 // Hash table improve performance for mapping search using strong calc only if weak is found
-func (s Sync) BuildSigTable(reader *bufio.Reader) []Table {
+func (s *Sync) BuildSigTable(reader *bufio.Reader) []Table {
 	//Read chunks from file
 	block := make([]byte, s.blockSize)
 	signatures := []Table{}
@@ -94,7 +94,7 @@ func (s Sync) BuildSigTable(reader *bufio.Reader) []Table {
 
 // Based on weak + string map searching for block position
 // in indexes and return block number or error if not found
-func (s Sync) Seek(idx Indexes, wk uint32, b []byte) int {
+func (s *Sync) Seek(idx Indexes, wk uint32, b []byte) int {
 	// Check if weaksum exists in indexes table
 	if subfield, found := idx[wk]; found {
 		st := strong(b) // Calc strong hash until weak found
@@ -108,7 +108,7 @@ func (s Sync) Seek(idx Indexes, wk uint32, b []byte) int {
 
 // Fill tables indexes to match block position and return indexes:
 // {weak strong} = 0, {weak, strong} = 1
-func (s Sync) BuildIndexes(signatures []Table) Indexes {
+func (s *Sync) BuildIndexes(signatures []Table) Indexes {
 	indexes := make(Indexes) // Build Indexes
 	// Keep signatures in memory while get processed
 	for i, check := range signatures {
@@ -119,7 +119,7 @@ func (s Sync) BuildIndexes(signatures []Table) Indexes {
 }
 
 // Check if any block get removed and return the cleaned/amplified matches copy with missing blocks
-func (s Sync) IntegrityCheck(sig []Table, matches map[int]Bytes) map[int]Bytes {
+func (s *Sync) IntegrityCheck(sig []Table, matches map[int]Bytes) map[int]Bytes {
 	for i := range sig {
 		if _, ok := matches[i]; !ok {
 			matches[i] = Bytes{
@@ -134,7 +134,7 @@ func (s Sync) IntegrityCheck(sig []Table, matches map[int]Bytes) map[int]Bytes {
 }
 
 // Return new calculated range position in block diffs
-func (s Sync) block(index int, literalMatches []byte) Bytes {
+func (s *Sync) block(index int, literalMatches []byte) Bytes {
 	return Bytes{
 		Start:  (index * s.blockSize),                 // Block change start
 		Offset: ((index * s.blockSize) + s.blockSize), // Block change endwhereas it could be copied-on-write to a new data structure
@@ -145,7 +145,7 @@ func (s Sync) block(index int, literalMatches []byte) Bytes {
 // Calculate "delta" and return match diffs.
 // Return map "Bytes" matches, each Byte keep position and literal
 // diff matches for block and the map key keep the block position.
-func (s Sync) Delta(sig []Table, reader *bufio.Reader) map[int]Bytes {
+func (s *Sync) Delta(sig []Table, reader *bufio.Reader) map[int]Bytes {
 	// Weak checksum adler32
 	weak := adler32.New()
 	// Indexes for block positionAppend block to match diffing list
@@ -201,6 +201,10 @@ func (s Sync) Delta(sig []Table, reader *bufio.Reader) map[int]Bytes {
 	// Finally check the blocks integrity
 	// Return cleaned/amplified copy for delta matches
 	delta = s.IntegrityCheck(sig, delta)
+
+	// Garbage collectable needed based on mem profiling analysis
+	utils.Clear(&weak)
+	utils.Clear(&tmpLitMatches)
 	return delta
 
 }
