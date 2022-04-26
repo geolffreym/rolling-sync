@@ -34,6 +34,14 @@ type Bytes struct {
 	Lit     []byte // Literal bytes to replace in delta
 }
 
+// Store delta matches
+type Delta map[int]Bytes
+
+// Add new match to delta table
+func (d Delta) Add(index int, b Bytes) {
+	d[index] = b
+}
+
 // Struct to handle weak + strong checksum operations
 type Table struct {
 	Weak   uint32
@@ -145,14 +153,15 @@ func (s *Sync) block(index int, literalMatches []byte) Bytes {
 // Calculate "delta" and return match diffs.
 // Return map "Bytes" matches, each Byte keep position and literal
 // diff matches for block and the map key keep the block position.
-func (s *Sync) Delta(sig []Table, reader *bufio.Reader) map[int]Bytes {
+func (s *Sync) Delta(sig []Table, reader *bufio.Reader) Delta {
 	// Weak checksum adler32
 	weak := adler32.New()
+	// Delta matches
+	delta := make(Delta)
 	// Indexes for block positionAppend block to match diffing list
 	indexes := s.BuildIndexes(sig)
 	// Literal matches keep literal diff bytes stored
 	tmpLitMatches := []byte{}
-	delta := make(map[int]Bytes)
 
 	// Keep tracking changes
 	for {
@@ -188,7 +197,7 @@ func (s *Sync) Delta(sig []Table, reader *bufio.Reader) map[int]Bytes {
 		if ^index != 0 { // match found
 			// Generate new block with calculated range positions for diffing
 			newBlock := s.block(index, tmpLitMatches)
-			delta[index] = newBlock // Add new block to delta matches
+			delta.Add(index, newBlock) // Add new block to delta matches
 
 			// Clear garbage collectable
 			utils.Clear(&tmpLitMatches) // Clear tmp literal matches
