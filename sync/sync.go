@@ -127,7 +127,7 @@ func (s *Sync) BuildIndexes(signatures []Table) Indexes {
 }
 
 // Check if any block get removed and return the cleaned/amplified matches copy with missing blocks
-func (s *Sync) IntegrityCheck(sig []Table, matches map[int]Bytes) map[int]Bytes {
+func (s *Sync) IntegrityCheck(sig []Table, matches Delta) Delta {
 	for i := range sig {
 		if _, ok := matches[i]; !ok {
 			matches[i] = Bytes{
