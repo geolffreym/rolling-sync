@@ -72,6 +72,15 @@ func weak(block []byte) uint32 {
 	return weak.Write(block).Sum()
 }
 
+// Return new calculated range position in block diffs
+func (s *Sync) block(index int, literalMatches []byte) Bytes {
+	return Bytes{
+		Start:  (index * s.blockSize),                 // Block change start
+		Offset: ((index * s.blockSize) + s.blockSize), // Block change endwhereas it could be copied-on-write to a new data structure
+		Lit:    literalMatches,                        // Store literal matches
+	}
+}
+
 // Fill signature from blocks using
 // Weak + Strong hash table to avoid collisions.
 // Hash table improve performance for mapping search using strong calc only if weak is found
@@ -100,6 +109,18 @@ func (s *Sync) BuildSigTable(reader *bufio.Reader) []Table {
 	return signatures
 }
 
+// Fill tables indexes to match block position and return indexes:
+// {weak strong} = 0, {weak, strong} = 1
+func (s *Sync) BuildIndexes(signatures []Table) Indexes {
+	indexes := make(Indexes) // Build Indexes
+	// Keep signatures in memory while get processed
+	for i, check := range signatures {
+		indexes[check.Weak] = map[string]int{check.Strong: i}
+	}
+
+	return indexes
+}
+
 // Based on weak + string map searching for block position
 // in indexes and return block number or error if not found
 func (s *Sync) Seek(idx Indexes, wk uint32, b []byte) int {
@@ -112,18 +133,6 @@ func (s *Sync) Seek(idx Indexes, wk uint32, b []byte) int {
 	}
 
 	return -1
-}
-
-// Fill tables indexes to match block position and return indexes:
-// {weak strong} = 0, {weak, strong} = 1
-func (s *Sync) BuildIndexes(signatures []Table) Indexes {
-	indexes := make(Indexes) // Build Indexes
-	// Keep signatures in memory while get processed
-	for i, check := range signatures {
-		indexes[check.Weak] = map[string]int{check.Strong: i}
-	}
-
-	return indexes
 }
 
 // Check if any block get removed and return the cleaned/amplified matches copy with missing blocks
@@ -139,15 +148,6 @@ func (s *Sync) IntegrityCheck(sig []Table, matches Delta) Delta {
 	}
 
 	return matches
-}
-
-// Return new calculated range position in block diffs
-func (s *Sync) block(index int, literalMatches []byte) Bytes {
-	return Bytes{
-		Start:  (index * s.blockSize),                 // Block change start
-		Offset: ((index * s.blockSize) + s.blockSize), // Block change endwhereas it could be copied-on-write to a new data structure
-		Lit:    literalMatches,                        // Store literal matches
-	}
 }
 
 // Calculate "delta" and return match diffs.
