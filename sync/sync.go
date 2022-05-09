@@ -111,7 +111,7 @@ func (s *Sync) BuildSigTable(reader *bufio.Reader) []Table {
 
 // Fill tables indexes to match block position and return indexes:
 // {weak strong} = 0, {weak, strong} = 1
-func (s *Sync) BuildIndexes(signatures []Table) Indexes {
+func (*Sync) BuildIndexes(signatures []Table) Indexes {
 	indexes := make(Indexes) // Build Indexes
 	// Keep signatures in memory while get processed
 	for i, check := range signatures {
@@ -123,7 +123,7 @@ func (s *Sync) BuildIndexes(signatures []Table) Indexes {
 
 // Based on weak + string map searching for block position
 // in indexes and return block number or error if not found
-func (s *Sync) Seek(idx Indexes, wk uint32, b []byte) int {
+func (*Sync) Seek(idx Indexes, wk uint32, b []byte) int {
 	// Check if weaksum exists in indexes table
 	if subfield, found := idx[wk]; found {
 		st := strong(b) // Calc strong hash until weak found
