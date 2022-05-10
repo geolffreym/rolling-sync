@@ -122,7 +122,7 @@ func (*Sync) BuildIndexes(signatures []Table) Indexes {
 }
 
 // Based on weak + string map searching for block position
-// in indexes and return block number or error if not found
+// in indexes and return block number or -1 if not found.
 func (*Sync) Seek(idx Indexes, wk uint32, b []byte) int {
 	// Check if weaksum exists in indexes table
 	if subfield, found := idx[wk]; found {
