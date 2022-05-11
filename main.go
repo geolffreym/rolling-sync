@@ -33,6 +33,6 @@ func main() {
 	}
 
 	sig := sync.BuildSigTable(v1) // Signature file for "source"
-	sync.Delta(sig, v2)           // Return delta with for "sig" and "target" differences
+	sync.Delta(sig, v2)           // Return delta with "sig" and "target" differences
 
 }
