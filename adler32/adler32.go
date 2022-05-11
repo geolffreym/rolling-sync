@@ -1,6 +1,6 @@
 // Adler Rolling Checksum
-// Based on rsync algorithm https://rsync.samba.org/tech_report/node3.html
-
+// Based on rsync algorithm
+// See also: https://rsync.samba.org/tech_report/node3.html
 package adler32
 
 // The sums are done modulo 65521 (the largest prime number smaller than 2^16).

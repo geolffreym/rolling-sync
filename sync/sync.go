@@ -1,5 +1,6 @@
-//Copyright (c) 2022, Geolffrey Mena <gmjun2000@gmail.com>
-//Circular buffer interface based on https://github.com/balena-os/circbuf
+// Copyright (c) 2022, Geolffrey Mena <gmjun2000@gmail.com>
+// Circular buffer interface based on https://github.com/balena-os/circbuf
+// Package sync implement a small library to match differences between files
 package sync
 
 import (
@@ -215,3 +216,5 @@ func (s *Sync) Delta(sig []Table, reader *bufio.Reader) Delta {
 	return delta
 
 }
+
+// TODO: add patch method
