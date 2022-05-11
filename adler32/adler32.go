@@ -7,9 +7,9 @@ package adler32
 const M = 65521
 
 type Adler32 struct {
-	window []byte
-	count  int // Last position
-	old    uint8
+	window []byte // A fixed size array of temporary evaluated bytes
+	count  int    // Last position
+	old    uint8  // Last element rolled out
 	a, b   uint16 // adler32 formula
 }
 
@@ -63,7 +63,7 @@ func (h Adler32) RollIn(input byte) Adler32 {
 
 // Substract byte from checksum
 func (h Adler32) RollOut() Adler32 {
-
+	// If window is empty. Nothing to roll out!
 	if len(h.window) == 0 {
 		h.count = 0
 		return h
