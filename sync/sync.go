@@ -1,7 +1,5 @@
-/**
-Copyright (c) 2022, Geolffrey Mena <gmjun2000@gmail.com>
-Circular buffer interface based on https://github.com/balena-os/circbuf
-**/
+//Copyright (c) 2022, Geolffrey Mena <gmjun2000@gmail.com>
+//Circular buffer interface based on https://github.com/balena-os/circbuf
 package sync
 
 import (
