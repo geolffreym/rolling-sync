@@ -160,7 +160,7 @@ func (s *Sync) Delta(sig []Table, reader *bufio.Reader) Delta {
 	// Indexes for block positionAppend block to match diffing list
 	indexes := s.BuildIndexes(sig)
 	// Literal matches keep literal diff bytes stored
-	tmpLitMatches := []byte{}
+	var tmpLitMatches []byte
 
 	// Keep tracking changes
 	for {
