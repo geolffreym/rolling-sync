@@ -16,7 +16,7 @@ type Adler32 struct {
 // Factory function
 func New() Adler32 {
 	return Adler32{
-		window: []byte{},
+		window: make([]byte, 0),
 		count:  0,
 		a:      0,
 		b:      0,
