@@ -157,7 +157,7 @@ func (s *Sync) Delta(sig []Table, reader *bufio.Reader) Delta {
 	weak := adler32.New()
 	// Delta matches
 	delta := make(Delta)
-	// Indexes for block positionAppend block to match diffing list
+	// Indexes for block position
 	indexes := s.BuildIndexes(sig)
 	// Literal matches keep literal diff bytes stored
 	var tmpLitMatches []byte
