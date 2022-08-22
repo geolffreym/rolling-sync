@@ -41,4 +41,6 @@ Code Analysis: `make check`
 
 Compile: `make compile`
 
+## Next
 
+- Use of immutable [string vs byte benchmark](https://medium.com/@felipedutratine/in-golang-should-i-work-with-bytes-or-strings-8bd1f5a7fd48) comparison

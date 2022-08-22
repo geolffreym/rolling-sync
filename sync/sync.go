@@ -84,9 +84,10 @@ func (s *Sync) block(index int, literalMatches []byte) Bytes {
 // Weak + Strong hash table to avoid collisions.
 // Hash table improve performance for mapping search using strong calc only if weak is found
 func (s *Sync) BuildSigTable(reader *bufio.Reader) []Table {
-	//Read chunks from file
+	// Read chunks from file
 	block := make([]byte, s.blockSize)
-	signatures := []Table{}
+	// Declares Table nil slice
+	var signatures []Table
 
 	for {
 		// Add chunks to buffer
