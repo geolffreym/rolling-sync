@@ -198,7 +198,6 @@ func (s *Sync) Delta(sig []Table, reader *bufio.Reader) Delta {
 			// Generate new block with calculated range positions for diffing
 			newBlock := s.block(index, tmpLitMatches)
 			delta.Add(index, newBlock) // Add new block to delta matches
-
 			// Clear garbage collectable
 			tmpLitMatches = tmpLitMatches[:0] // clear tmp literal matches
 			weak = adler32.New()              // replace weak adler object

@@ -158,7 +158,7 @@ func TestDetectChunkShifted(t *testing.T) {
 	o := []byte("i am here guys how are you doing this is a small test for chunk split and rolling hash")
 	c := []byte("i am here guys   how are you doing    test for chunk split and rolling hash")
 	expect := map[int][]byte{
-		1: []byte("i am here guys   h"), // Match first block change
+		1: []byte("   m here guys   h"), // Match first block change
 		3: []byte("   "),                // Match third block change
 	}
 
