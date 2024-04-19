@@ -10,7 +10,6 @@ import (
 	"io"
 
 	"github.com/geolffreym/rolling-sync/adler32"
-	"github.com/geolffreym/rolling-sync/utils"
 )
 
 const S = 16
@@ -20,11 +19,12 @@ type Indexes map[uint32]map[string]int
 
 /*
 Bytes store block differences
- Missing = true && len(Lit) == 0 (block missing)
- Missing = false && len(Lit) > 0 (block exist and some changes made to block)
- Missing == false && Lit == nil (block intact just copy it)
- Literal matches = any textual/literal value match found eg. "abcdef"
- No literal matches = any match found by position range in block to copy eg. Block missing && Start > 0 && Offset > 0
+
+	Missing = true && len(Lit) == 0 (block missing)
+	Missing = false && len(Lit) > 0 (block exist and some changes made to block)
+	Missing == false && Lit == nil (block intact just copy it)
+	Literal matches = any textual/literal value match found eg. "abcdef"
+	No literal matches = any match found by position range in block to copy eg. Block missing && Start > 0 && Offset > 0
 */
 type Bytes struct {
 	Offset  int    // End of diff position in block
@@ -200,8 +200,8 @@ func (s *Sync) Delta(sig []Table, reader *bufio.Reader) Delta {
 			delta.Add(index, newBlock) // Add new block to delta matches
 
 			// Clear garbage collectable
-			utils.Clear(&tmpLitMatches) // Clear tmp literal matches
-			utils.Clear(&weak)          // Clear weak adler object
+			tmpLitMatches = tmpLitMatches[:0] // clear tmp literal matches
+			weak = adler32.New()              // replace weak adler object
 		}
 
 	}
@@ -209,13 +209,6 @@ func (s *Sync) Delta(sig []Table, reader *bufio.Reader) Delta {
 	// Missing blocks?
 	// Finally check the blocks integrity
 	// Return cleaned/amplified copy for delta matches
-	delta = s.IntegrityCheck(sig, delta)
-
-	// Garbage collectable needed based on mem profiling analysis
-	utils.Clear(&weak)
-	utils.Clear(&tmpLitMatches)
-	return delta
+	return s.IntegrityCheck(sig, delta)
 
 }
-
-// TODO: add patch method

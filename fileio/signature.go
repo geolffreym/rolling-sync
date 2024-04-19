@@ -41,7 +41,8 @@ func ReadSignature(file string) ([]sync.Table, error) {
 	}
 
 	defer f.Close()
-	read := []sync.Table{}
+	var read []sync.Table
+
 	dataDecoder := gob.NewDecoder(f)
 	err = dataDecoder.Decode(&read)
 
