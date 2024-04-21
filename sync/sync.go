@@ -8,8 +8,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"io"
-
-	"github.com/geolffreym/rolling-sync/adler32"
 )
 
 const S = 16
@@ -67,7 +65,7 @@ func strong(block []byte) string {
 
 // Calc and return weak adler32 checksum
 func weak(block []byte) uint32 {
-	weak := adler32.New()
+	weak := NewAdler32()
 	return weak.Write(block).Sum()
 }
 
@@ -155,7 +153,7 @@ func (s *Sync) IntegrityCheck(sig []Table, matches Delta) Delta {
 // diff matches for block and the map key keep the block position.
 func (s *Sync) Delta(sig []Table, reader *bufio.Reader) Delta {
 	// Weak checksum adler32
-	weak := adler32.New()
+	weak := NewAdler32()
 	// Delta matches
 	delta := make(Delta)
 	// Indexes for block position
@@ -200,7 +198,7 @@ func (s *Sync) Delta(sig []Table, reader *bufio.Reader) Delta {
 			delta.Add(index, newBlock) // Add new block to delta matches
 			// Clear garbage collectable
 			tmpLitMatches = tmpLitMatches[:0] // clear tmp literal matches
-			weak = adler32.New()              // replace weak adler object
+			weak = NewAdler32()               // replace weak adler object
 		}
 
 	}
